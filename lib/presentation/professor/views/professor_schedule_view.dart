@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../data/models/common_model.dart';
 import '../../../data/models/course_model.dart';
 import '../../../data/repositories/course_repository.dart';
 import '../../auth/viewmodels/auth_viewmodel.dart';
+import '../../common/widgets/nav_items_builder.dart';
 import '../../common/widgets/sutandard_nav_bar.dart';
 import '../../timetable/views/widgets/timetable_grid.dart';
 import '../../../data/models/timetable_model.dart';
@@ -61,7 +63,9 @@ class _ProfessorScheduleViewState
       barrierDismissible: false,
       builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Padding(
           padding: const EdgeInsets.all(28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -132,6 +136,7 @@ class _ProfessorScheduleViewState
               ),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -215,17 +220,16 @@ class _ProfessorScheduleViewState
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
     final profsAsync = ref.watch(_professorsProvider(_searchQuery));
+    final responsive = Responsive(context);
+    final hPad =
+        responsive.value(mobile: 16.0, tablet: 32.0, desktop: 48.0);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
           SutandardNavBar(
-            navItems: [
-              NavItem(label: '홈', onTap: () => context.go('/')),
-              NavItem(
-                  label: '시간표 엿보기', isActive: true, onTap: () {}),
-            ],
+            navItems: buildMainNavItems(context, '/professor-schedule'),
             showProfile: authState.isAuthenticated,
             userName: authState.user?.name,
             onLoginTap: () => context.go('/login'),
@@ -235,113 +239,132 @@ class _ProfessorScheduleViewState
             },
           ),
           Container(height: 1, color: AppColors.border),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1400),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(hPad, 20, hPad, 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.person_search_outlined,
+                          color: AppColors.primary, size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('교수님 시간표 엿보기',
+                              style: AppTextStyles.heading3),
+                          const SizedBox(height: 2),
+                          Text('과목 데이터 기반 · 공식 오피스아워가 아닙니다',
+                              style: AppTextStyles.bodySmall
+                                  .copyWith(color: AppColors.textTertiary)),
+                        ],
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: _showDisclaimer,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: AppColors.warning.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.info_outline_rounded,
+                            size: 16, color: AppColors.warning),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1400),
+              child: Container(
+                margin: EdgeInsets.fromLTRB(hPad, 4, hPad, 0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: AppColors.warning.withValues(alpha: 0.15)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        size: 15, color: AppColors.warning),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '참고용 정보입니다. 실제 오피스아워는 교수님께 직접 확인하세요.',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1400),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(hPad, 12, hPad, 0),
+                child: Container(
                   height: 44,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
                   ),
-                  child: const Icon(Icons.person_search_outlined,
-                      color: AppColors.primary, size: 22),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('교수님 시간표 엿보기', style: AppTextStyles.heading3),
-                      const SizedBox(height: 2),
-                      Text('과목 데이터 기반 · 공식 오피스아워가 아닙니다',
-                          style: AppTextStyles.bodySmall
-                              .copyWith(color: AppColors.textTertiary)),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: _showDisclaimer,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: AppColors.warning.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
+                  child: TextField(
+                    controller: _searchController,
+                    style: AppTextStyles.body.copyWith(fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: '교수님 성함을 검색하세요',
+                      hintStyle: AppTextStyles.bodySmall
+                          .copyWith(color: AppColors.textHint),
+                      prefixIcon: const Icon(Icons.search_rounded,
+                          size: 20, color: AppColors.textTertiary),
+                      border: InputBorder.none,
+                      contentPadding:
+                          const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Icon(Icons.info_outline_rounded,
-                        size: 16, color: AppColors.warning),
+                    onSubmitted: (q) =>
+                        setState(() => _searchQuery = q.isEmpty ? null : q),
                   ),
                 ),
-              ],
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.fromLTRB(24, 4, 24, 0),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.warning.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(8),
-              border:
-                  Border.all(color: AppColors.warning.withValues(alpha: 0.15)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.warning_amber_rounded,
-                    size: 15, color: AppColors.warning),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '참고용 정보입니다. 실제 오피스아워는 교수님께 직접 확인하세요.',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-            child: Container(
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: TextField(
-                controller: _searchController,
-                style: AppTextStyles.body.copyWith(fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: '교수님 성함을 검색하세요',
-                  hintStyle: AppTextStyles.bodySmall
-                      .copyWith(color: AppColors.textHint),
-                  prefixIcon: const Icon(Icons.search_rounded,
-                      size: 20, color: AppColors.textTertiary),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                onSubmitted: (q) =>
-                    setState(() => _searchQuery = q.isEmpty ? null : q),
               ),
             ),
           ),
           const SizedBox(height: 12),
           Expanded(
             child: _selectedProfessor != null
-                ? _buildProfessorDetail()
-                : _buildProfessorList(profsAsync),
+                ? _buildProfessorDetail(hPad)
+                : _buildProfessorList(profsAsync, hPad),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProfessorList(AsyncValue<List<Professor>> profsAsync) {
+  Widget _buildProfessorList(
+      AsyncValue<List<Professor>> profsAsync, double hPad) {
     return profsAsync.when(
       loading: () =>
           const Center(child: CircularProgressIndicator(strokeWidth: 2)),
@@ -367,69 +390,81 @@ class _ProfessorScheduleViewState
             ),
           );
         }
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-          itemCount: professors.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (_, i) {
-            final prof = professors[i];
-            return ListTile(
-              leading: CircleAvatar(
-                backgroundColor: AppColors.primary.withValues(alpha: 0.08),
-                child: Text(
-                  prof.name.isNotEmpty ? prof.name[0] : '?',
-                  style: AppTextStyles.subtitle
-                      .copyWith(color: AppColors.primary),
-                ),
-              ),
-              title: Text(prof.name, style: AppTextStyles.subtitle),
-              subtitle: prof.department != null
-                  ? Text(prof.department!, style: AppTextStyles.bodySmall)
-                  : null,
-              trailing: const Icon(Icons.chevron_right_rounded,
-                  color: AppColors.textTertiary),
-              onTap: () => _loadProfessorSchedule(prof),
-            );
-          },
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1400),
+            child: ListView.separated(
+              padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 24),
+              itemCount: professors.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (_, i) {
+                final prof = professors[i];
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor:
+                        AppColors.primary.withValues(alpha: 0.08),
+                    child: Text(
+                      prof.name.isNotEmpty ? prof.name[0] : '?',
+                      style: AppTextStyles.subtitle
+                          .copyWith(color: AppColors.primary),
+                    ),
+                  ),
+                  title: Text(prof.name, style: AppTextStyles.subtitle),
+                  subtitle: prof.department != null
+                      ? Text(prof.department!,
+                          style: AppTextStyles.bodySmall)
+                      : null,
+                  trailing: const Icon(Icons.chevron_right_rounded,
+                      color: AppColors.textTertiary),
+                  onTap: () => _loadProfessorSchedule(prof),
+                );
+              },
+            ),
+          ),
         );
       },
     );
   }
 
-  Widget _buildProfessorDetail() {
+  Widget _buildProfessorDetail(double hPad) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              IconButton(
-                onPressed: () => setState(() {
-                  _selectedProfessor = null;
-                  _professorDetail = null;
-                  _scheduleCourses = [];
-                }),
-                icon: const Icon(Icons.arrow_back_rounded),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '${_selectedProfessor!.name} 교수님',
-                  style: AppTextStyles.heading3,
-                ),
-              ),
-              if (_selectedProfessor!.department != null)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1400),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: hPad),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => setState(() {
+                      _selectedProfessor = null;
+                      _professorDetail = null;
+                      _scheduleCourses = [];
+                    }),
+                    icon: const Icon(Icons.arrow_back_rounded),
                   ),
-                  child: Text(_selectedProfessor!.department!,
-                      style: AppTextStyles.captionBold),
-                ),
-            ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${_selectedProfessor!.name} 교수님',
+                      style: AppTextStyles.heading3,
+                    ),
+                  ),
+                  if (_selectedProfessor!.department != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(_selectedProfessor!.department!,
+                          style: AppTextStyles.captionBold),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
         if (_professorDetail != null) _buildProfessorInfoCard(),
@@ -479,7 +514,10 @@ class _ProfessorScheduleViewState
       return const SizedBox.shrink();
     }
 
-    return Container(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1400),
+        child: Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -526,6 +564,8 @@ class _ProfessorScheduleViewState
             ),
           ],
         ],
+      ),
+        ),
       ),
     );
   }

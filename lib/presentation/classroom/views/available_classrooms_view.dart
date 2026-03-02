@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../data/models/common_model.dart';
 import '../../../data/models/course_model.dart';
 import '../../../data/models/timetable_model.dart';
 import '../../../data/repositories/course_repository.dart';
 import '../../auth/viewmodels/auth_viewmodel.dart';
+import '../../common/widgets/nav_items_builder.dart';
 import '../../common/widgets/sutandard_nav_bar.dart';
 import '../../timetable/views/widgets/timetable_grid.dart';
 
@@ -84,37 +86,44 @@ class _AvailableClassroomsViewState
   }
 
   List<TimetableCourse> _toTimetableCourses() {
-    if (_classroomCourses.isEmpty) return [];
+    if (_classroomCourses.isEmpty || _selectedClassroom == null) return [];
+    final classroomId = _selectedClassroom!.id;
     const colors = [
       '#4A6CF7', '#10B981', '#F59E0B', '#EF4444',
       '#8B5CF6', '#3B82F6', '#EC4899', '#06B6D4',
     ];
-    return _classroomCourses
-        .asMap()
-        .entries
-        .map((entry) => TimetableCourse(
-              id: entry.value.id,
-              course: entry.value.id,
-              courseDetail: entry.value,
-              schedules: entry.value.schedules,
-              color: colors[entry.key % colors.length],
-            ))
-        .toList();
+    final result = <TimetableCourse>[];
+    var colorIndex = 0;
+    for (final course in _classroomCourses) {
+      final filteredSchedules = course.schedules
+          .where((s) => s.classroom == classroomId)
+          .toList();
+      if (filteredSchedules.isEmpty) continue;
+      result.add(TimetableCourse(
+        id: course.id,
+        course: course.id,
+        courseDetail: course,
+        schedules: filteredSchedules,
+        color: colors[colorIndex % colors.length],
+      ));
+      colorIndex++;
+    }
+    return result;
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
+    final responsive = Responsive(context);
+    final hPad =
+        responsive.value(mobile: 16.0, tablet: 32.0, desktop: 48.0);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
           SutandardNavBar(
-            navItems: [
-              NavItem(label: '홈', onTap: () => context.go('/')),
-              NavItem(label: '강의실', isActive: true, onTap: () {}),
-            ],
+            navItems: buildMainNavItems(context, '/classrooms'),
             showProfile: authState.isAuthenticated,
             userName: authState.user?.name,
             onLoginTap: () => context.go('/login'),
@@ -124,74 +133,84 @@ class _AvailableClassroomsViewState
             },
           ),
           Container(height: 1, color: AppColors.border),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.meeting_room_outlined,
-                      color: AppColors.successHigh, size: 22),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1400),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(hPad, 20, hPad, 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.meeting_room_outlined,
+                          color: AppColors.successHigh, size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('강의실 정보', style: AppTextStyles.heading3),
+                          const SizedBox(height: 2),
+                          Text('빈 강의실 확인 및 강의실 시간표',
+                              style: AppTextStyles.bodySmall),
+                        ],
+                      ),
+                    ),
+                    if (_selectedClassroom != null)
+                      IconButton(
+                        onPressed: () => setState(() {
+                          _selectedClassroom = null;
+                          _classroomCourses = [];
+                        }),
+                        icon: const Icon(Icons.arrow_back_rounded,
+                            color: AppColors.textTertiary),
+                        tooltip: '목록으로',
+                      )
+                    else
+                      IconButton(
+                        onPressed: () {
+                          ref.invalidate(_availableClassroomsProvider);
+                          ref.invalidate(_allClassroomsProvider);
+                        },
+                        icon: const Icon(Icons.refresh_rounded,
+                            color: AppColors.textTertiary),
+                        tooltip: '새로고침',
+                      ),
+                  ],
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('강의실 정보', style: AppTextStyles.heading3),
-                      const SizedBox(height: 2),
-                      Text('빈 강의실 확인 및 강의실 시간표',
-                          style: AppTextStyles.bodySmall),
-                    ],
-                  ),
-                ),
-                if (_selectedClassroom != null)
-                  IconButton(
-                    onPressed: () => setState(() {
-                      _selectedClassroom = null;
-                      _classroomCourses = [];
-                    }),
-                    icon: const Icon(Icons.arrow_back_rounded,
-                        color: AppColors.textTertiary),
-                    tooltip: '목록으로',
-                  )
-                else
-                  IconButton(
-                    onPressed: () {
-                      ref.invalidate(_availableClassroomsProvider);
-                      ref.invalidate(_allClassroomsProvider);
-                    },
-                    icon: const Icon(Icons.refresh_rounded,
-                        color: AppColors.textTertiary),
-                    tooltip: '새로고침',
-                  ),
-              ],
+              ),
             ),
           ),
           if (_selectedClassroom != null)
-            Expanded(child: _buildClassroomSchedule())
+            Expanded(child: _buildClassroomSchedule(hPad))
           else ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: TabBar(
-                controller: _tabController,
-                tabs: const [
-                  Tab(text: '빈 강의실'),
-                  Tab(text: '전체 강의실'),
-                ],
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1400),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: hPad),
+                  child: TabBar(
+                    controller: _tabController,
+                    tabs: const [
+                      Tab(text: '빈 강의실'),
+                      Tab(text: '전체 강의실'),
+                    ],
+                  ),
+                ),
               ),
             ),
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildAvailableTab(),
-                  _buildAllClassroomsTab(),
+                  _buildAvailableTab(hPad),
+                  _buildAllClassroomsTab(hPad),
                 ],
               ),
             ),
@@ -201,7 +220,7 @@ class _AvailableClassroomsViewState
     );
   }
 
-  Widget _buildAvailableTab() {
+  Widget _buildAvailableTab(double hPad) {
     final classroomsAsync = ref.watch(_availableClassroomsProvider);
     return classroomsAsync.when(
       loading: () =>
@@ -244,48 +263,61 @@ class _AvailableClassroomsViewState
         }
         final buildings = grouped.keys.toList()..sort();
 
-        return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          itemCount: buildings.length,
-          itemBuilder: (context, i) {
-            final building = buildings[i];
-            final rooms = grouped[building]!;
-            return _BuildingSection(
-              buildingName: building,
-              classrooms: rooms,
-              onClassroomTap: _loadClassroomSchedule,
-            );
-          },
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1400),
+            child: ListView.builder(
+              padding:
+                  EdgeInsets.fromLTRB(hPad, 8, hPad, 24),
+              itemCount: buildings.length,
+              itemBuilder: (context, i) {
+                final building = buildings[i];
+                final rooms = grouped[building]!;
+                return _BuildingSection(
+                  buildingName: building,
+                  classrooms: rooms,
+                  onClassroomTap: _loadClassroomSchedule,
+                );
+              },
+            ),
+          ),
         );
       },
     );
   }
 
-  Widget _buildAllClassroomsTab() {
+  Widget _buildAllClassroomsTab(double hPad) {
     final classroomsAsync = ref.watch(_allClassroomsProvider);
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Container(
-            height: 42,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: TextField(
-              style: AppTextStyles.body.copyWith(fontSize: 14),
-              decoration: InputDecoration(
-                hintText: '건물명 또는 강의실 번호 검색',
-                hintStyle: AppTextStyles.bodySmall
-                    .copyWith(color: AppColors.textHint),
-                prefixIcon: const Icon(Icons.search_rounded,
-                    size: 20, color: AppColors.textTertiary),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 11),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1400),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 8),
+              child: Container(
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: TextField(
+                  style: AppTextStyles.body.copyWith(fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: '건물명 또는 강의실 번호 검색',
+                    hintStyle: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.textHint),
+                    prefixIcon: const Icon(Icons.search_rounded,
+                        size: 20, color: AppColors.textTertiary),
+                    border: InputBorder.none,
+                    contentPadding:
+                        const EdgeInsets.symmetric(vertical: 11),
+                  ),
+                  onChanged: (q) =>
+                      setState(() => _searchQuery = q.toLowerCase()),
+                ),
               ),
-              onChanged: (q) => setState(() => _searchQuery = q.toLowerCase()),
             ),
           ),
         ),
@@ -300,16 +332,23 @@ class _AvailableClassroomsViewState
             data: (classrooms) {
               var filtered = classrooms;
               if (_searchQuery.isNotEmpty) {
-                filtered = classrooms.where((c) =>
-                    c.buildingName.toLowerCase().contains(_searchQuery) ||
-                    c.roomNumber.toLowerCase().contains(_searchQuery) ||
-                    (c.name?.toLowerCase().contains(_searchQuery) ?? false))
+                filtered = classrooms
+                    .where((c) =>
+                        c.buildingName
+                            .toLowerCase()
+                            .contains(_searchQuery) ||
+                        c.roomNumber
+                            .toLowerCase()
+                            .contains(_searchQuery) ||
+                        (c.name?.toLowerCase().contains(_searchQuery) ??
+                            false))
                     .toList();
               }
 
               if (filtered.isEmpty) {
                 return Center(
-                  child: Text('검색 결과가 없습니다', style: AppTextStyles.bodySmall),
+                  child: Text('검색 결과가 없습니다',
+                      style: AppTextStyles.bodySmall),
                 );
               }
 
@@ -319,18 +358,23 @@ class _AvailableClassroomsViewState
               }
               final buildings = grouped.keys.toList()..sort();
 
-              return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                itemCount: buildings.length,
-                itemBuilder: (context, i) {
-                  final building = buildings[i];
-                  final rooms = grouped[building]!;
-                  return _BuildingSection(
-                    buildingName: building,
-                    classrooms: rooms,
-                    onClassroomTap: _loadClassroomSchedule,
-                  );
-                },
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1400),
+                  child: ListView.builder(
+                    padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 24),
+                    itemCount: buildings.length,
+                    itemBuilder: (context, i) {
+                      final building = buildings[i];
+                      final rooms = grouped[building]!;
+                      return _BuildingSection(
+                        buildingName: building,
+                        classrooms: rooms,
+                        onClassroomTap: _loadClassroomSchedule,
+                      );
+                    },
+                  ),
+                ),
               );
             },
           ),
@@ -339,50 +383,55 @@ class _AvailableClassroomsViewState
     );
   }
 
-  Widget _buildClassroomSchedule() {
+  Widget _buildClassroomSchedule(double hPad) {
     final cr = _selectedClassroom!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.meeting_room_outlined,
-                      color: AppColors.primary, size: 20),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1400),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(hPad, 4, hPad, 8),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('${cr.buildingName} ${cr.roomNumber}',
-                          style: AppTextStyles.subtitle),
-                      if (cr.name != null && cr.name!.isNotEmpty)
-                        Text(cr.name!,
-                            style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.textTertiary)),
-                    ],
-                  ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.meeting_room_outlined,
+                          color: AppColors.primary, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('${cr.buildingName} ${cr.roomNumber}',
+                              style: AppTextStyles.subtitle),
+                          if (cr.name != null && cr.name!.isNotEmpty)
+                            Text(cr.name!,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                    color: AppColors.textTertiary)),
+                        ],
+                      ),
+                    ),
+                    if (!_loadingSchedule)
+                      Text('${_classroomCourses.length}개 수업',
+                          style: AppTextStyles.captionBold),
+                  ],
                 ),
-                if (!_loadingSchedule)
-                  Text('${_classroomCourses.length}개 수업',
-                      style: AppTextStyles.captionBold),
-              ],
+              ),
             ),
           ),
         ),

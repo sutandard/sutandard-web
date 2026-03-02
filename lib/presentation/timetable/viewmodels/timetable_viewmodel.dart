@@ -94,7 +94,7 @@ class TimetableViewModel extends Notifier<TimetableState> {
       final newTt = await _repository.createTimetable(
         TimetableCreate(
           semester: latest.id,
-          name: latest.shortLabel,
+          name: latest.label,
           isMain: true,
         ),
       );

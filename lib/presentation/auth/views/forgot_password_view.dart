@@ -7,7 +7,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../common/widgets/sutandard_button.dart';
-import '../../common/widgets/sutandard_logo.dart';
+import '../../common/widgets/sutandard_nav_bar.dart';
 import '../../common/widgets/sutandard_text_field.dart';
 
 enum _ResetStep { input, done }
@@ -122,29 +122,13 @@ class _ForgotPasswordViewState extends ConsumerState<ForgotPasswordView> {
   }
 
   Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, size: 22),
-            onPressed: () => context.go('/login'),
-            visualDensity: VisualDensity.compact,
-          ),
-          const Spacer(),
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () => context.go('/'),
-              child: const SutandardLogo(
-                variant: SutandardLogoVariant.textOnly,
-                height: 18,
-              ),
-            ),
-          ),
-          const Spacer(),
-          const SizedBox(width: 48),
-        ],
+    return SutandardNavBar(
+      navItems: const [],
+      hideAuthButton: true,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_rounded, size: 22),
+        onPressed: () => context.go('/login'),
+        visualDensity: VisualDensity.compact,
       ),
     );
   }

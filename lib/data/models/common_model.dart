@@ -171,15 +171,33 @@ class Classroom {
   }
 }
 
+class College {
+  final int id;
+  final String name;
+
+  const College({required this.id, required this.name});
+
+  factory College.fromJson(Map<String, dynamic> json) {
+    return College(
+      id: json['id'] as int,
+      name: json['name'] as String,
+    );
+  }
+}
+
 class Department {
   final int id;
   final String code;
   final String name;
+  final int? college;
+  final String collegeName;
 
   const Department({
     required this.id,
     required this.code,
     required this.name,
+    this.college,
+    this.collegeName = '',
   });
 
   factory Department.fromJson(Map<String, dynamic> json) {
@@ -187,6 +205,8 @@ class Department {
       id: json['id'] as int,
       code: json['code'] as String,
       name: json['name'] as String,
+      college: json['college'] as int?,
+      collegeName: json['college_name'] as String? ?? '',
     );
   }
 }

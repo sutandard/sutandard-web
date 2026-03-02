@@ -6,24 +6,41 @@ import 'presentation/auth/views/forgot_password_view.dart';
 import 'presentation/auth/views/login_view.dart';
 import 'presentation/auth/views/register_view.dart';
 import 'presentation/classroom/views/available_classrooms_view.dart';
+import 'presentation/courses/views/course_list_view.dart';
 import 'presentation/home/views/home_view.dart';
 import 'presentation/professor/views/professor_schedule_view.dart';
 import 'presentation/review/views/review_write_view.dart';
 import 'presentation/timetable/views/timetable_view.dart';
 import 'presentation/timetable/views/wizard_view.dart';
 
+// Uses ChangeNotifier + refreshListenable so the GoRouter is created once
+// and auth state changes only trigger redirect re-evaluation, not router recreation.
+class _RouterNotifier extends ChangeNotifier {
+  _RouterNotifier(Ref ref) {
+    ref.listen<AuthState>(authViewModelProvider, (_, __) {
+      notifyListeners();
+    });
+    _ref = ref;
+  }
+
+  late final Ref _ref;
+
+  bool get isAuthenticated => _ref.read(authViewModelProvider).isAuthenticated;
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authViewModelProvider);
+  final notifier = _RouterNotifier(ref);
 
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: notifier,
     redirect: (context, state) {
-      final isAuthenticated = authState.isAuthenticated;
+      final isAuthenticated = notifier.isAuthenticated;
       final isAuthRoute = state.matchedLocation == '/login' ||
           state.matchedLocation == '/register' ||
           state.matchedLocation == '/forgot-password';
 
-      final protectedRoutes = ['/review/write', '/wizard'];
+      final protectedRoutes = ['/wizard'];
       if (!isAuthenticated &&
           protectedRoutes.contains(state.matchedLocation)) {
         return '/login';
@@ -62,9 +79,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const TimetableView(),
       ),
       GoRoute(
-        path: '/review/write',
-        name: 'review-write',
-        builder: (context, state) => const ReviewWriteView(),
+        path: '/courses',
+        name: 'courses',
+        builder: (context, state) => const CourseListView(),
+      ),
+      GoRoute(
+        path: '/reviews',
+        name: 'reviews',
+        builder: (context, state) => const ReviewView(),
       ),
       GoRoute(
         path: '/wizard',

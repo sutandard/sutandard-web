@@ -6,10 +6,12 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/responsive.dart';
+
 import '../../../data/models/review_model.dart';
 import '../../../data/repositories/course_repository.dart';
 import '../../../data/repositories/review_repository.dart';
 import '../../auth/viewmodels/auth_viewmodel.dart';
+import '../../common/widgets/nav_items_builder.dart';
 import '../../common/widgets/sutandard_button.dart';
 import '../../common/widgets/sutandard_nav_bar.dart';
 import '../../timetable/viewmodels/timetable_viewmodel.dart';
@@ -31,20 +33,7 @@ class HomeView extends ConsumerWidget {
         child: Column(
           children: [
             SutandardNavBar(
-              navItems: [
-                NavItem(
-                  label: '나의 시간표',
-                  onTap: () => _goToTimetableOrLogin(context, authState),
-                ),
-                NavItem(
-                  label: '강의 후기',
-                  onTap: () => _goToRouteOrLogin(context, authState, '/review/write'),
-                ),
-                NavItem(
-                  label: '시간표 마법사',
-                  onTap: () => _goToRouteOrLogin(context, authState, '/wizard'),
-                ),
-              ],
+              navItems: buildMainNavItems(context, '/'),
               onLoginTap: authState.isAuthenticated
                   ? null
                   : () => context.go('/login'),
@@ -57,7 +46,6 @@ class HomeView extends ConsumerWidget {
                   context.go('/');
                 }
               },
-              onMenuTap: () => _showMobileMenu(context, ref),
             ),
             Container(height: 1, color: AppColors.border),
             const SizedBox(height: 28),
@@ -71,100 +59,6 @@ class HomeView extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-
-  void _goToTimetableOrLogin(BuildContext context, AuthState authState) {
-    if (authState.isAuthenticated) {
-      context.go('/timetable');
-    } else {
-      context.go('/login');
-    }
-  }
-
-  void _goToRouteOrLogin(BuildContext context, AuthState authState, String route) {
-    if (authState.isAuthenticated) {
-      context.go(route);
-    } else {
-      context.go('/login');
-    }
-  }
-
-  void _showMobileMenu(BuildContext context, WidgetRef ref) {
-    final authState = ref.read(authViewModelProvider);
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 16),
-              _menuItem(ctx, Icons.calendar_today_outlined, '나의 시간표', () {
-                Navigator.pop(ctx);
-                _goToTimetableOrLogin(context, authState);
-              }),
-              _menuItem(ctx, Icons.rate_review_outlined, '강의 후기', () {
-                Navigator.pop(ctx);
-                _goToRouteOrLogin(context, authState, '/review/write');
-              }),
-              _menuItem(ctx, Icons.auto_fix_high_rounded, '시간표 마법사', () {
-                Navigator.pop(ctx);
-                _goToRouteOrLogin(context, authState, '/wizard');
-              }),
-              _menuItem(ctx, Icons.meeting_room_outlined, '빈 강의실', () {
-                Navigator.pop(ctx);
-                context.go('/classrooms');
-              }),
-              _menuItem(ctx, Icons.person_search_outlined, '시간표 엿보기', () {
-                Navigator.pop(ctx);
-                context.go('/professor-schedule');
-              }),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Divider(height: 16),
-              ),
-              if (authState.isAuthenticated)
-                _menuItem(ctx, Icons.logout_rounded, '로그아웃', () {
-                  Navigator.pop(ctx);
-                  ref.read(authViewModelProvider.notifier).logout();
-                }, color: AppColors.error)
-              else
-                _menuItem(ctx, Icons.login_rounded, '로그인', () {
-                  Navigator.pop(ctx);
-                  context.go('/login');
-                }),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _menuItem(
-    BuildContext context,
-    IconData icon,
-    String label,
-    VoidCallback onTap, {
-    Color? color,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: color ?? AppColors.textSecondary, size: 22),
-      title: Text(
-        label,
-        style: AppTextStyles.body.copyWith(color: color),
-      ),
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
     );
   }
 }
@@ -299,27 +193,27 @@ class _MainDashboard extends ConsumerWidget {
   }
 
   Widget _desktopLayout(BuildContext context, WidgetRef ref) {
-    return SizedBox(
-      height: 720,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(flex: 60, child: _TimetableCard()),
-          const SizedBox(width: 20),
-          Expanded(
-            flex: 40,
-            child: Column(
-              children: [
-                const _CurrentTimeCard(),
-                const SizedBox(height: 16),
-                _CurrentLectureCard(),
-                const SizedBox(height: 16),
-                const Expanded(child: _ReviewCard()),
-              ],
-            ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 60,
+          child: SizedBox(height: 680, child: _TimetableCard()),
+        ),
+        const SizedBox(width: 20),
+        Expanded(
+          flex: 40,
+          child: Column(
+            children: [
+              const _CurrentTimeCard(),
+              const SizedBox(height: 16),
+              _CurrentLectureCard(),
+              const SizedBox(height: 16),
+              const SizedBox(height: 500, child: _ReviewCard()),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

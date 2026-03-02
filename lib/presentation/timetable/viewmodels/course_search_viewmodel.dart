@@ -12,12 +12,13 @@ class CourseSearchState {
   final bool? isElearning;
   final int? yearLevel;
   final String? department;
-  final String? period;
+  final int? selectedCollegeId;
   final List<Subject> subjects;
   final bool isLoading;
   final String? error;
   final List<Semester> semesters;
   final int? selectedSemesterId;
+  final List<College> colleges;
   final List<Department> departments;
 
   final int? expandedIndex;
@@ -33,12 +34,13 @@ class CourseSearchState {
     this.isElearning,
     this.yearLevel,
     this.department,
-    this.period,
+    this.selectedCollegeId,
     this.subjects = const [],
     this.isLoading = false,
     this.error,
     this.semesters = const [],
     this.selectedSemesterId,
+    this.colleges = const [],
     this.departments = const [],
     this.expandedIndex,
     this.expandedSections = const [],
@@ -52,7 +54,15 @@ class CourseSearchState {
       isElearning != null ||
       yearLevel != null ||
       department != null ||
-      period != null;
+      selectedCollegeId != null;
+
+  /// Returns filtered departments based on selected college
+  List<Department> get filteredDepartments {
+    if (selectedCollegeId == null) return departments;
+    return departments
+        .where((d) => d.college == selectedCollegeId)
+        .toList();
+  }
 
   CourseSearchState copyWith({
     String? query,
@@ -60,12 +70,13 @@ class CourseSearchState {
     Object? isElearning = _sentinel,
     Object? yearLevel = _sentinel,
     Object? department = _sentinel,
-    Object? period = _sentinel,
+    Object? selectedCollegeId = _sentinel,
     List<Subject>? subjects,
     bool? isLoading,
     String? error,
     List<Semester>? semesters,
     int? selectedSemesterId,
+    List<College>? colleges,
     List<Department>? departments,
     Object? expandedIndex = _sentinel,
     List<CourseDetail>? expandedSections,
@@ -97,16 +108,17 @@ class CourseSearchState {
           : department == _sentinel
               ? this.department
               : department as String?,
-      period: clearFilters
+      selectedCollegeId: clearFilters
           ? null
-          : period == _sentinel
-              ? this.period
-              : period as String?,
+          : selectedCollegeId == _sentinel
+              ? this.selectedCollegeId
+              : selectedCollegeId as int?,
       subjects: subjects ?? this.subjects,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
       semesters: semesters ?? this.semesters,
       selectedSemesterId: selectedSemesterId ?? this.selectedSemesterId,
+      colleges: colleges ?? this.colleges,
       departments: departments ?? this.departments,
       expandedIndex: expandedIndex == _sentinel
           ? this.expandedIndex
@@ -135,20 +147,29 @@ class CourseSearchViewModel extends Notifier<CourseSearchState> {
   ReviewRepository get _reviewRepo => ref.read(reviewRepositoryProvider);
 
   Future<void> _loadInitialData() async {
-    try {
-      final futures = await Future.wait([
-        _repo.getSemesters(),
-        _repo.getDepartments(),
-      ]);
-      final semesters = futures[0] as List<Semester>;
-      final departments = futures[1] as List<Department>;
+    List<Semester> semesters = [];
+    List<College> colleges = [];
+    List<Department> departments = [];
 
-      state = state.copyWith(
-        semesters: semesters,
-        selectedSemesterId: semesters.isNotEmpty ? semesters.first.id : null,
-        departments: departments,
-      );
+    // Load each independently so one failure doesn't block others
+    try {
+      semesters = await _repo.getSemesters();
     } catch (_) {}
+
+    try {
+      colleges = await _repo.getColleges();
+    } catch (_) {}
+
+    try {
+      departments = await _repo.getDepartments();
+    } catch (_) {}
+
+    state = state.copyWith(
+      semesters: semesters,
+      selectedSemesterId: semesters.isNotEmpty ? semesters.first.id : null,
+      colleges: colleges,
+      departments: departments,
+    );
   }
 
   Future<void> search(String query) async {
@@ -163,6 +184,15 @@ class CourseSearchViewModel extends Notifier<CourseSearchState> {
       selectedCourseReviews: [],
     );
 
+    // Determine college name for API filter (subjects endpoint takes string)
+    String? collegeName;
+    if (state.selectedCollegeId != null) {
+      final match = state.colleges
+          .where((c) => c.id == state.selectedCollegeId)
+          .firstOrNull;
+      collegeName = match?.name;
+    }
+
     try {
       final results = await _repo.getSubjects(SubjectSearchParams(
         search: query.isEmpty ? null : query,
@@ -170,6 +200,7 @@ class CourseSearchViewModel extends Notifier<CourseSearchState> {
         courseType: state.courseType,
         department: state.department,
         yearLevel: state.yearLevel,
+        college: collegeName,
       ));
       state = state.copyWith(
         subjects: results,
@@ -266,13 +297,17 @@ class CourseSearchViewModel extends Notifier<CourseSearchState> {
     searchWithFilters();
   }
 
-  void setDepartment(String? code) {
-    state = state.copyWith(department: code);
+  void setCollege(int? collegeId) {
+    // When college changes, clear department selection
+    state = state.copyWith(
+      selectedCollegeId: collegeId,
+      department: null,
+    );
     searchWithFilters();
   }
 
-  void setPeriod(String? value) {
-    state = state.copyWith(period: value);
+  void setDepartment(String? code) {
+    state = state.copyWith(department: code);
     searchWithFilters();
   }
 

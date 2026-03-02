@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../../core/utils/download_utils.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/responsive.dart';
@@ -14,6 +16,7 @@ import '../../../data/models/course_model.dart';
 import '../../../data/models/timetable_model.dart';
 import '../../../data/repositories/course_repository.dart';
 import '../../auth/viewmodels/auth_viewmodel.dart';
+import '../../common/widgets/nav_items_builder.dart';
 import '../../common/widgets/sutandard_button.dart';
 import '../../common/widgets/sutandard_nav_bar.dart';
 import '../viewmodels/course_search_viewmodel.dart';
@@ -67,21 +70,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
       body: Column(
         children: [
           SutandardNavBar(
-            navItems: [
-              NavItem(
-                label: '나의 시간표',
-                isActive: true,
-                onTap: () {},
-              ),
-              NavItem(
-                label: '강의 후기',
-                onTap: () => context.go('/review/write'),
-              ),
-              NavItem(
-                label: '시간표 마법사',
-                onTap: () => context.go('/wizard'),
-              ),
-            ],
+            navItems: buildMainNavItems(context, '/timetable'),
             showProfile: authState.isAuthenticated,
             userName: authState.user?.name,
             onLoginTap: () => context.go('/login'),
@@ -141,24 +130,35 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
   }
 
   Widget _buildGuestDesktopLayout(BuildContext context, WidgetRef ref) {
-    return Padding(
-      key: const ValueKey('guest-desktop'),
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            flex: 60,
-            child: _buildGuestTimetableSection(context),
+    final responsive = Responsive(context);
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1400),
+        child: Padding(
+          key: const ValueKey('guest-desktop'),
+          padding: EdgeInsets.symmetric(
+            horizontal:
+                responsive.value(mobile: 16.0, tablet: 32.0, desktop: 48.0),
+            vertical: 20,
           ),
-          const SizedBox(width: 20),
-          Expanded(
-            flex: 40,
-            child: CourseSearchPanel(
-              onCourseAdd: (courseId, color) => _addMockCourse(courseId, color),
-            ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 60,
+                child: _buildGuestTimetableSection(context),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                flex: 40,
+                child: CourseSearchPanel(
+                  onCourseAdd: (courseId, color) =>
+                      _addMockCourse(courseId, color),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -272,28 +272,38 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
 
   Widget _buildDesktopLayout(
       BuildContext context, TimetableState state, WidgetRef ref) {
-    return Padding(
-      key: const ValueKey('desktop'),
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            flex: 60,
-            child: _buildTimetableSection(context, state, ref),
+    final responsive = Responsive(context);
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1400),
+        child: Padding(
+          key: const ValueKey('desktop'),
+          padding: EdgeInsets.symmetric(
+            horizontal:
+                responsive.value(mobile: 16.0, tablet: 32.0, desktop: 48.0),
+            vertical: 20,
           ),
-          const SizedBox(width: 20),
-          Expanded(
-            flex: 40,
-            child: CourseSearchPanel(
-              onCourseAdd: (courseId, color) {
-                ref.read(timetableViewModelProvider.notifier).addCourse(
-                      AddCourseRequest(courseId: courseId, color: color),
-                    );
-              },
-            ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 60,
+                child: _buildTimetableSection(context, state, ref),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                flex: 40,
+                child: CourseSearchPanel(
+                  onCourseAdd: (courseId, color) {
+                    ref.read(timetableViewModelProvider.notifier).addCourse(
+                          AddCourseRequest(courseId: courseId, color: color),
+                        );
+                  },
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -448,6 +458,17 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                     ],
                   ),
                 ),
+              if (state.courses.isNotEmpty)
+                const PopupMenuItem(
+                  value: 'ics',
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_month_outlined, size: 18),
+                      SizedBox(width: 8),
+                      Text('캘린더로 내보내기 (.ics)'),
+                    ],
+                  ),
+                ),
               if (state.allTimetables.length > 1)
                 const PopupMenuItem(
                   value: 'delete',
@@ -477,6 +498,8 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                   _showCreateTimetableDialog(context, ref, state);
                 case 'export':
                   _exportTimetableImage(context, state);
+                case 'ics':
+                  _exportTimetableICS(context, state);
                 case 'delete':
                   _showDeleteTimetableConfirm(context, ref, state);
                 case 'wizard':
@@ -876,16 +899,14 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
       if (byteData == null) return;
 
       final bytes = byteData.buffer.asUint8List();
+      final name = state.name.isNotEmpty ? state.name : '시간표';
 
       if (kIsWeb) {
-        scaffoldMessenger.showSnackBar(
-          const SnackBar(content: Text('웹에서는 이미지 저장이 지원되지 않습니다')),
-        );
+        downloadFile(bytes.toList(), '${name}_시간표.png', 'image/png');
         return;
       }
 
       final dir = await getTemporaryDirectory();
-      final name = state.name.isNotEmpty ? state.name : '시간표';
       final file = File(
           '${dir.path}/${name}_${DateTime.now().millisecondsSinceEpoch}.png');
       await file.writeAsBytes(bytes);
@@ -902,6 +923,90 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
       );
     }
   }
+
+  Future<void> _exportTimetableICS(
+      BuildContext context, TimetableState state) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    try {
+      final name = state.name.isNotEmpty ? state.name : '시간표';
+      final icsContent = _generateICS(state, name);
+      final bytes = utf8.encode(icsContent);
+
+      if (kIsWeb) {
+        downloadFile(bytes, '$name.ics', 'text/calendar');
+        return;
+      }
+
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/$name.ics');
+      await file.writeAsString(icsContent);
+
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          text: '수탠다드 - $name',
+        ),
+      );
+    } catch (_) {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(content: Text('캘린더 내보내기에 실패했습니다')),
+      );
+    }
+  }
+
+  String _generateICS(TimetableState state, String name) {
+    final buf = StringBuffer();
+    buf.writeln('BEGIN:VCALENDAR');
+    buf.writeln('VERSION:2.0');
+    buf.writeln('PRODID:-//Sutandard//Sutandard Timetable//KO');
+    buf.writeln('CALSCALE:GREGORIAN');
+    buf.writeln('METHOD:PUBLISH');
+    buf.writeln('X-WR-CALNAME:$name');
+    buf.writeln('X-WR-TIMEZONE:Asia/Seoul');
+
+    for (final course in state.courses) {
+      for (final schedule in course.schedules) {
+        final base = _nextOccurrence(schedule.dayIndex);
+        final dateStr =
+            '${base.year}${base.month.toString().padLeft(2, '0')}${base.day.toString().padLeft(2, '0')}';
+        final sH = schedule.startHour.toString().padLeft(2, '0');
+        final sM = schedule.startMinute.toString().padLeft(2, '0');
+        final eH = schedule.endHour.toString().padLeft(2, '0');
+        final eM = schedule.endMinute.toString().padLeft(2, '0');
+
+        buf.writeln('BEGIN:VEVENT');
+        buf.writeln(
+            'UID:sutandard-${course.id}-${schedule.id}@sutandard.kr');
+        buf.writeln(
+            'DTSTART;TZID=Asia/Seoul:${dateStr}T$sH${sM}00');
+        buf.writeln(
+            'DTEND;TZID=Asia/Seoul:${dateStr}T$eH${eM}00');
+        buf.writeln('RRULE:FREQ=WEEKLY;COUNT=16');
+        buf.writeln('SUMMARY:${_icsEscape(course.name)}');
+        buf.writeln(
+            'DESCRIPTION:${_icsEscape(course.professorName)} · ${course.credits}학점');
+        if (schedule.classroomStr.isNotEmpty) {
+          buf.writeln('LOCATION:${_icsEscape(schedule.classroomStr)}');
+        }
+        buf.writeln('END:VEVENT');
+      }
+    }
+
+    buf.writeln('END:VCALENDAR');
+    return buf.toString();
+  }
+
+  DateTime _nextOccurrence(int dayIndex) {
+    // dayIndex: 0=Mon, 6=Sun; DateTime.weekday: 1=Mon, 7=Sun
+    final today = DateTime.now();
+    final todayIndex = today.weekday - 1;
+    final daysAhead = (dayIndex - todayIndex) % 7;
+    return DateTime(today.year, today.month, today.day + daysAhead);
+  }
+
+  String _icsEscape(String text) =>
+      text.replaceAll(',', '\\,').replaceAll(';', '\\;').replaceAll('\n', '\\n');
 
   void _showCourseDetail(
     BuildContext context,

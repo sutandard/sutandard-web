@@ -1,5 +1,8 @@
 abstract final class ApiConstants {
-  static const baseUrl = 'https://api.sutandard.kr';
+  static const baseUrl = String.fromEnvironment(
+    'API_URL',
+    defaultValue: 'https://api.sutandard.kr',
+  );
 
   // Auth
   static const login = '/api/auth/login/';
@@ -27,6 +30,7 @@ abstract final class ApiConstants {
   static String professorSchedule(int id) =>
       '/api/courses/professors/$id/schedule/';
   static const departments = '/api/courses/departments/';
+  static const colleges = '/api/courses/colleges/';
   static const classrooms = '/api/courses/classrooms/';
   static const availableClassrooms = '/api/courses/classrooms/available/';
 

@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/constants/legal_texts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../common/widgets/sutandard_logo.dart';
 
 class HomeFooter extends StatelessWidget {
   const HomeFooter({super.key});
@@ -24,14 +27,14 @@ class HomeFooter extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1400),
           child: responsive.isMobile
-              ? _mobileFooter()
-              : _desktopFooter(),
+              ? _mobileFooter(context)
+              : _desktopFooter(context),
         ),
       ),
     );
   }
 
-  Widget _desktopFooter() {
+  Widget _desktopFooter(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -42,7 +45,7 @@ class HomeFooter extends StatelessWidget {
         const SizedBox(width: 40),
         Expanded(
           flex: 3,
-          child: _linksSection(),
+          child: _linksSection(context),
         ),
         Expanded(
           flex: 3,
@@ -52,7 +55,7 @@ class HomeFooter extends StatelessWidget {
     );
   }
 
-  Widget _mobileFooter() {
+  Widget _mobileFooter(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -61,7 +64,7 @@ class HomeFooter extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _linksSection()),
+            Expanded(child: _linksSection(context)),
             Expanded(child: _contactSection()),
           ],
         ),
@@ -73,7 +76,10 @@ class HomeFooter extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Sutandard', style: AppTextStyles.logo),
+        const SutandardLogo(
+          variant: SutandardLogoVariant.textOnly,
+          height: 24,
+        ),
         const SizedBox(height: 8),
         Text(
           '수원대학교 학우들을 위한\n시간표 관리 시스템',
@@ -93,19 +99,124 @@ class HomeFooter extends StatelessWidget {
     );
   }
 
-  Widget _linksSection() {
+  Widget _linksSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('서비스', style: AppTextStyles.subtitle.copyWith(fontSize: 13)),
         const SizedBox(height: 10),
-        _footerLink('이용약관', onTap: () {}),
+        _footerLink(
+          '이용약관',
+          onTap: () => _showLegalText(
+            context,
+            title: '서비스 이용약관',
+            text: LegalTexts.termsOfService,
+          ),
+        ),
         const SizedBox(height: 6),
-        _footerLink('개인정보 처리방침', onTap: () {}),
+        _footerLink(
+          '개인정보 처리방침',
+          onTap: () => _showLegalText(
+            context,
+            title: '개인정보 처리방침',
+            text: LegalTexts.privacyPolicy,
+          ),
+        ),
         const SizedBox(height: 6),
         _footerLink('크레딧', onTap: () {}),
       ],
     );
+  }
+
+  void _showLegalText(
+    BuildContext context, {
+    required String title,
+    required String text,
+  }) {
+    if (kIsWeb) {
+      showDialog(
+        context: context,
+        builder: (ctx) => Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: ConstrainedBox(
+            constraints:
+                const BoxConstraints(maxWidth: 560, maxHeight: 600),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                          child:
+                              Text(title, style: AppTextStyles.heading3)),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 22),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(height: 1, color: AppColors.border),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(text, style: AppTextStyles.bodyLight),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (ctx) => DraggableScrollableSheet(
+          initialChildSize: 0.85,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (ctx, scrollController) => Container(
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              borderRadius:
+                  BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 12, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                          child: Text(title,
+                              style: AppTextStyles.heading3)),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 22),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(height: 1, color: AppColors.border),
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.all(20),
+                    child: Text(text, style: AppTextStyles.bodyLight),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _contactSection() {

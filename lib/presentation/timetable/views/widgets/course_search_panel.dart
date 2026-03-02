@@ -107,7 +107,7 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
               controller: _searchController,
               style: AppTextStyles.body.copyWith(fontSize: 14),
               decoration: InputDecoration(
-                hintText: '과목명, 학수번호로 검색',
+                hintText: '과목명, 교수명, 학수번호로 검색',
                 hintStyle: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.textHint,
                 ),
@@ -165,12 +165,15 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
           const SizedBox(height: 10),
           _buildYearLevelRow(state, vm),
           const SizedBox(height: 10),
-          if (state.departments.isNotEmpty) ...[
+          if (state.colleges.isNotEmpty) ...[
+            _buildCollegeRow(state, vm),
+            const SizedBox(height: 10),
+          ],
+          if (state.filteredDepartments.isNotEmpty) ...[
             _buildDepartmentRow(state, vm),
             const SizedBox(height: 10),
           ],
-          _buildPeriodRow(state, vm),
-          const SizedBox(height: 12),
+          const SizedBox(height: 2),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -281,8 +284,45 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
     );
   }
 
+  Widget _buildCollegeRow(
+      CourseSearchState state, CourseSearchViewModel vm) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('단과대',
+            style: AppTextStyles.captionBold.copyWith(fontSize: 12)),
+        const SizedBox(height: 6),
+        SizedBox(
+          height: 32,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              _FilterChip(
+                label: '전체',
+                selected: state.selectedCollegeId == null,
+                onTap: () => vm.setCollege(null),
+                showCheck: state.selectedCollegeId == null,
+              ),
+              ...state.colleges.map((c) => Padding(
+                    padding: const EdgeInsets.only(left: 5),
+                    child: _FilterChip(
+                      label: c.name,
+                      selected: state.selectedCollegeId == c.id,
+                      onTap: () => vm.setCollege(
+                          state.selectedCollegeId == c.id ? null : c.id),
+                      showCheck: state.selectedCollegeId == c.id,
+                    ),
+                  )),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildDepartmentRow(
       CourseSearchState state, CourseSearchViewModel vm) {
+    final depts = state.filteredDepartments;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -300,9 +340,8 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
                 onTap: () => vm.setDepartment(null),
                 showCheck: state.department == null,
               ),
-              const SizedBox(width: 5),
-              ...state.departments.map((d) => Padding(
-                    padding: const EdgeInsets.only(right: 5),
+              ...depts.map((d) => Padding(
+                    padding: const EdgeInsets.only(left: 5),
                     child: _FilterChip(
                       label: d.name,
                       selected: state.department == d.code,
@@ -318,54 +357,38 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
     );
   }
 
-  Widget _buildPeriodRow(
-      CourseSearchState state, CourseSearchViewModel vm) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('후기 기간',
-            style: AppTextStyles.captionBold.copyWith(fontSize: 12)),
-        const SizedBox(height: 6),
-        Wrap(
-          spacing: 5,
-          runSpacing: 5,
-          children: [
-            _FilterChip(
-              label: '전체',
-              selected: state.period == null,
-              onTap: () => vm.setPeriod(null),
-              showCheck: state.period == null,
-            ),
-            ...FilterConstants.periods.entries.map((e) => _FilterChip(
-                  label: e.value,
-                  selected: state.period == e.key,
-                  onTap: () =>
-                      vm.setPeriod(state.period == e.key ? null : e.key),
-                  showCheck: state.period == e.key,
-                )),
-          ],
-        ),
-      ],
-    );
-  }
-
   Widget _buildSubjectList(
       CourseSearchState state, CourseSearchViewModel vm) {
     if (state.subjects.isEmpty && !state.isLoading) {
+      final hasError = state.error != null;
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.search_rounded, size: 40,
-                  color: AppColors.textTertiary.withValues(alpha: 0.4)),
+              Icon(
+                hasError
+                    ? Icons.error_outline_rounded
+                    : Icons.search_rounded,
+                size: 40,
+                color: (hasError
+                        ? AppColors.error
+                        : AppColors.textTertiary)
+                    .withValues(alpha: 0.4),
+              ),
               const SizedBox(height: 14),
               Text(
-                state.query.isEmpty && !state.hasActiveFilters
-                    ? '과목명 또는 학수번호로\n검색해주세요'
-                    : '검색 결과가 없습니다',
-                style: AppTextStyles.bodySmall,
+                hasError
+                    ? state.error!
+                    : state.query.isEmpty && !state.hasActiveFilters
+                        ? '과목명 또는 학수번호로\n검색해주세요'
+                        : '검색 결과가 없습니다',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: hasError
+                      ? AppColors.error
+                      : AppColors.textSecondary,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -394,8 +417,9 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
             sections: isExpanded ? state.expandedSections : const [],
             loadingSections: isExpanded && state.loadingSections,
             onToggle: () => vm.toggleSubjectExpand(index),
-            onSectionAdd: (courseId) =>
-                widget.onCourseAdd?.call(courseId, _nextColor()),
+            onSectionAdd: widget.onCourseAdd != null
+                ? (courseId) => widget.onCourseAdd?.call(courseId, _nextColor())
+                : null,
             onSectionTap: (course) {
               vm.selectCourseForInfo(course);
               _tabController.animateTo(1);
@@ -678,7 +702,7 @@ class _SubjectCard extends StatelessWidget {
   final List<CourseDetail> sections;
   final bool loadingSections;
   final VoidCallback onToggle;
-  final void Function(int courseId) onSectionAdd;
+  final void Function(int courseId)? onSectionAdd;
   final void Function(CourseDetail course) onSectionTap;
 
   const _SubjectCard({
@@ -687,7 +711,7 @@ class _SubjectCard extends StatelessWidget {
     required this.sections,
     required this.loadingSections,
     required this.onToggle,
-    required this.onSectionAdd,
+    this.onSectionAdd,
     required this.onSectionTap,
   });
 
@@ -841,7 +865,9 @@ class _SubjectCard extends StatelessWidget {
           ),
           ...sections.map((section) => _SectionRow(
                 section: section,
-                onAdd: () => onSectionAdd(section.id),
+                onAdd: onSectionAdd != null
+                    ? () => onSectionAdd!(section.id)
+                    : null,
                 onTap: () => onSectionTap(section),
               )),
           const SizedBox(height: 6),
@@ -853,12 +879,12 @@ class _SubjectCard extends StatelessWidget {
 
 class _SectionRow extends StatelessWidget {
   final CourseDetail section;
-  final VoidCallback onAdd;
+  final VoidCallback? onAdd;
   final VoidCallback onTap;
 
   const _SectionRow({
     required this.section,
-    required this.onAdd,
+    this.onAdd,
     required this.onTap,
   });
 
@@ -942,20 +968,22 @@ class _SectionRow extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 6),
-            Material(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-              child: InkWell(
+            if (onAdd != null) ...[
+              const SizedBox(width: 6),
+              Material(
+                color: AppColors.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
-                onTap: onAdd,
-                child: const Padding(
-                  padding: EdgeInsets.all(6),
-                  child: Icon(Icons.add_rounded,
-                      size: 18, color: AppColors.primary),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: onAdd,
+                  child: const Padding(
+                    padding: EdgeInsets.all(6),
+                    child: Icon(Icons.add_rounded,
+                        size: 18, color: AppColors.primary),
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),
