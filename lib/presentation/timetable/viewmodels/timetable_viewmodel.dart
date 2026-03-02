@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/error_handler.dart';
+import '../../../data/models/course_model.dart';
 import '../../../data/models/timetable_model.dart';
 import '../../../data/repositories/course_repository.dart';
 import '../../../data/repositories/timetable_repository.dart';
@@ -216,6 +217,58 @@ class TimetableViewModel extends Notifier<TimetableState> {
     } catch (e) {
       state = state.copyWith(error: extractErrorMessage(e));
     }
+  }
+
+  Future<void> updateCourseColor(int timetableCourseId, String color) async {
+    final timetable = state.timetable;
+    if (timetable == null) return;
+
+    try {
+      final updated = await _repository.updateCourse(
+        timetable.id,
+        timetableCourseId,
+        color: color,
+      );
+      final updatedCourses = timetable.courses.map((c) {
+        if (c.id == timetableCourseId) return updated;
+        return c;
+      }).toList();
+      state = state.copyWith(
+        timetable: Timetable(
+          id: timetable.id,
+          semester: timetable.semester,
+          semesterStr: timetable.semesterStr,
+          name: timetable.name,
+          isMain: timetable.isMain,
+          createdAt: timetable.createdAt,
+          courses: updatedCourses,
+        ),
+      );
+    } catch (e) {
+      state = state.copyWith(error: extractErrorMessage(e));
+    }
+  }
+
+  /// Returns list of existing courses that conflict with the given schedules.
+  List<TimetableCourse> findConflicts(List<CourseSchedule> newSchedules) {
+    final existing = state.courses;
+    final conflicts = <TimetableCourse>{};
+    for (final newSch in newSchedules) {
+      for (final course in existing) {
+        for (final existSch in course.schedules) {
+          if (_schedulesOverlap(newSch, existSch)) {
+            conflicts.add(course);
+          }
+        }
+      }
+    }
+    return conflicts.toList();
+  }
+
+  static bool _schedulesOverlap(CourseSchedule a, CourseSchedule b) {
+    if (a.dayIndex != b.dayIndex) return false;
+    return a.startInMinutes < b.endInMinutes &&
+        a.endInMinutes > b.startInMinutes;
   }
 
   void clearError() {

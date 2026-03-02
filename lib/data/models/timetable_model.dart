@@ -24,6 +24,17 @@ class Timetable {
       courses.fold(0, (sum, c) => sum + (c.courseDetail?.credits ?? 0));
 
   factory Timetable.fromJson(Map<String, dynamic> json) {
+    final courses = (json['courses'] as List<dynamic>?)
+            ?.map(
+                (e) => TimetableCourse.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        [];
+    // API returns e-learning courses under a separate 'online_courses' key
+    final onlineCourses = (json['online_courses'] as List<dynamic>?)
+            ?.map(
+                (e) => TimetableCourse.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        [];
     return Timetable(
       id: json['id'] as int,
       semester: json['semester'] as int,
@@ -31,11 +42,7 @@ class Timetable {
       name: json['name'] as String? ?? '',
       isMain: json['is_main'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
-      courses: (json['courses'] as List<dynamic>?)
-              ?.map(
-                  (e) => TimetableCourse.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      courses: [...courses, ...onlineCourses],
     );
   }
 }
@@ -66,6 +73,7 @@ class TimetableCourse {
   String get name => courseDetail?.name ?? '';
   String get professorName => courseDetail?.professorName ?? '';
   int get credits => courseDetail?.credits ?? 0;
+  bool get isElearning => courseDetail?.isElearning ?? false;
 
   factory TimetableCourse.fromJson(Map<String, dynamic> json) {
     return TimetableCourse(

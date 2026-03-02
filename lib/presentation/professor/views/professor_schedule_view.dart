@@ -427,85 +427,90 @@ class _ProfessorScheduleViewState
   }
 
   Widget _buildProfessorDetail(double hPad) {
-    return Column(
-      children: [
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1400),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: hPad),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => setState(() {
-                      _selectedProfessor = null;
-                      _professorDetail = null;
-                      _scheduleCourses = [];
-                    }),
-                    icon: const Icon(Icons.arrow_back_rounded),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${_selectedProfessor!.name} 교수님',
-                      style: AppTextStyles.heading3,
+    return SingleChildScrollView(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1400),
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: hPad),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => setState(() {
+                        _selectedProfessor = null;
+                        _professorDetail = null;
+                        _scheduleCourses = [];
+                      }),
+                      icon: const Icon(Icons.arrow_back_rounded),
                     ),
-                  ),
-                  if (_selectedProfessor!.department != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(8),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${_selectedProfessor!.name} 교수님',
+                        style: AppTextStyles.heading3,
                       ),
-                      child: Text(_selectedProfessor!.department!,
-                          style: AppTextStyles.captionBold),
                     ),
-                ],
+                    if (_selectedProfessor!.department != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(_selectedProfessor!.department!,
+                            style: AppTextStyles.captionBold),
+                      ),
+                  ],
+                ),
               ),
-            ),
+              if (_professorDetail != null) _buildProfessorInfoCard(hPad),
+              const SizedBox(height: 8),
+              if (_loadingSchedule)
+                const Padding(
+                  padding: EdgeInsets.all(48),
+                  child: Center(
+                      child: CircularProgressIndicator(strokeWidth: 2)),
+                )
+              else if (_scheduleCourses.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(48),
+                  child: Center(
+                    child: Text('담당 과목이 없습니다',
+                        style: AppTextStyles.bodySmall),
+                  ),
+                )
+              else ...[
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: hPad),
+                  child: Text(
+                    '담당 과목 ${_scheduleCourses.length}개',
+                    style: AppTextStyles.bodySmall,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: hPad),
+                  child: SizedBox(
+                    height: 600,
+                    child: TimetableGrid(
+                      courses: _toTimetableCourses(),
+                    ),
+                  ),
+                ),
+                _buildCourseListBar(hPad),
+              ],
+              const SizedBox(height: 24),
+            ],
           ),
         ),
-        if (_professorDetail != null) _buildProfessorInfoCard(),
-        const SizedBox(height: 8),
-        Expanded(
-          child: _loadingSchedule
-              ? const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : _scheduleCourses.isEmpty
-                  ? Center(
-                      child: Text('담당 과목이 없습니다',
-                          style: AppTextStyles.bodySmall),
-                    )
-                  : Column(
-                      children: [
-                        Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            '담당 과목 ${_scheduleCourses.length}개',
-                            style: AppTextStyles.bodySmall,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: TimetableGrid(
-                              courses: _toTimetableCourses(),
-                            ),
-                          ),
-                        ),
-                        _buildCourseListBar(),
-                      ],
-                    ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildProfessorInfoCard() {
+  Widget _buildProfessorInfoCard(double hPad) {
     final detail = _professorDetail!;
     final hasContactInfo = detail.email != null ||
         detail.phone != null ||
@@ -514,11 +519,8 @@ class _ProfessorScheduleViewState
       return const SizedBox.shrink();
     }
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1400),
-        child: Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+    return Container(
+      margin: EdgeInsets.fromLTRB(hPad, 8, hPad, 0),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -565,8 +567,6 @@ class _ProfessorScheduleViewState
           ],
         ],
       ),
-        ),
-      ),
     );
   }
 
@@ -586,10 +586,10 @@ class _ProfessorScheduleViewState
     );
   }
 
-  Widget _buildCourseListBar() {
+  Widget _buildCourseListBar(double hPad) {
     if (_scheduleCourses.isEmpty) return const SizedBox.shrink();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 8),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.border)),
       ),

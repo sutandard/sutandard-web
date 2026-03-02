@@ -86,32 +86,63 @@ class TimetableGrid extends StatelessWidget {
   }) {
     final dayCount = AppConstants.timetableDays.length;
     final columnWidth = totalWidth / dayCount;
-    final widgets = <Widget>[];
 
+    // Build a list of all schedule entries with their course reference
+    final entries = <_ScheduleEntry>[];
     for (final course in courses) {
       for (final schedule in course.schedules) {
         if (schedule.dayIndex < 0 || schedule.dayIndex >= dayCount) continue;
+        entries.add(_ScheduleEntry(course: course, schedule: schedule));
+      }
+    }
+
+    // Group entries by day and compute overlap layout
+    final dayEntries = <int, List<_ScheduleEntry>>{};
+    for (final entry in entries) {
+      dayEntries
+          .putIfAbsent(entry.schedule.dayIndex, () => [])
+          .add(entry);
+    }
+
+    final widgets = <Widget>[];
+
+    for (final dayIndex in dayEntries.keys) {
+      final dayList = dayEntries[dayIndex]!;
+      // Sort by start time
+      dayList.sort(
+          (a, b) => a.schedule.startInMinutes.compareTo(b.schedule.startInMinutes));
+
+      // Assign columns to overlapping entries
+      final columns = _assignOverlapColumns(dayList);
+
+      for (var i = 0; i < dayList.length; i++) {
+        final entry = dayList[i];
+        final col = columns[i];
 
         final topOffset =
-            (schedule.startHour - AppConstants.timetableStartHour +
-                    schedule.startMinute / 60) *
+            (entry.schedule.startHour - AppConstants.timetableStartHour +
+                    entry.schedule.startMinute / 60) *
                 periodHeight;
-        final height = schedule.durationInMinutes / 60 * periodHeight;
+        final height = entry.schedule.durationInMinutes / 60 * periodHeight;
+
+        final slotWidth = columnWidth / col.total;
+        final left = dayIndex * columnWidth + col.index * slotWidth;
 
         widgets.add(
           Positioned(
-            left: schedule.dayIndex * columnWidth,
+            left: left,
             top: topOffset,
-            width: columnWidth,
+            width: slotWidth,
             height: height,
             child: LectureCard(
-              course: course,
-              schedule: schedule,
+              course: entry.course,
+              schedule: entry.schedule,
+              isOverlapping: col.total > 1,
               onTap: onCourseTap != null
-                  ? () => onCourseTap!(course, schedule)
+                  ? () => onCourseTap!(entry.course, entry.schedule)
                   : null,
               onLongPress: onCourseLongPress != null
-                  ? () => onCourseLongPress!(course)
+                  ? () => onCourseLongPress!(entry.course)
                   : null,
             ),
           ),
@@ -121,6 +152,67 @@ class TimetableGrid extends StatelessWidget {
 
     return widgets;
   }
+
+  /// Assigns column index and total columns for overlapping schedule entries.
+  List<_OverlapColumn> _assignOverlapColumns(List<_ScheduleEntry> entries) {
+    final result = List.filled(entries.length, const _OverlapColumn(0, 1));
+
+    // Find overlap groups
+    final groups = <List<int>>[];
+    final visited = <int>{};
+
+    for (var i = 0; i < entries.length; i++) {
+      if (visited.contains(i)) continue;
+
+      final group = [i];
+      visited.add(i);
+
+      for (var j = i + 1; j < entries.length; j++) {
+        if (visited.contains(j)) continue;
+        // Check if j overlaps with any member of the group
+        for (final member in group) {
+          if (_overlaps(entries[member].schedule, entries[j].schedule)) {
+            group.add(j);
+            visited.add(j);
+            break;
+          }
+        }
+      }
+      groups.add(group);
+    }
+
+    for (final group in groups) {
+      final total = group.length;
+      // Sort group members by start time for consistent column assignment
+      group.sort((a, b) => entries[a]
+          .schedule
+          .startInMinutes
+          .compareTo(entries[b].schedule.startInMinutes));
+      for (var col = 0; col < group.length; col++) {
+        result[group[col]] = _OverlapColumn(col, total);
+      }
+    }
+
+    return result;
+  }
+
+  bool _overlaps(CourseSchedule a, CourseSchedule b) {
+    if (a.dayIndex != b.dayIndex) return false;
+    return a.startInMinutes < b.endInMinutes &&
+        a.endInMinutes > b.startInMinutes;
+  }
+}
+
+class _ScheduleEntry {
+  final TimetableCourse course;
+  final CourseSchedule schedule;
+  const _ScheduleEntry({required this.course, required this.schedule});
+}
+
+class _OverlapColumn {
+  final int index;
+  final int total;
+  const _OverlapColumn(this.index, this.total);
 }
 
 class _DayHeader extends StatelessWidget {

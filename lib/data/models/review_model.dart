@@ -72,7 +72,6 @@ class CreateReviewRequest {
   final int gradeScore;
   final int assignmentScore;
   final int examScore;
-  final bool isAnonymous;
 
   const CreateReviewRequest({
     required this.course,
@@ -81,19 +80,14 @@ class CreateReviewRequest {
     required this.gradeScore,
     required this.assignmentScore,
     required this.examScore,
-    this.isAnonymous = false,
   });
 
-  Map<String, dynamic> toJson() {
-    final json = <String, dynamic>{
-      'course': course,
-      'content': content,
-      'grade_score': gradeScore,
-      'assignment_score': assignmentScore,
-      'exam_score': examScore,
-      'is_anonymous': isAnonymous,
-    };
-    if (semesterTaken != null) json['semester_taken'] = semesterTaken;
-    return json;
-  }
+  Map<String, dynamic> toJson() => {
+        'course': course,
+        'semester_taken': semesterTaken ?? 0,
+        'content': content,
+        'grade_score': gradeScore,
+        'assignment_score': assignmentScore,
+        'exam_score': examScore,
+      };
 }

@@ -123,10 +123,129 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
       return _buildError(context, state.error!, ref);
     }
 
+    if (state.timetable == null) {
+      return _buildCreateTimetableGuide(context, ref, responsive);
+    }
+
     if (responsive.isDesktop) {
       return _buildDesktopLayout(context, state, ref);
     }
     return _buildMobileLayout(context, state, ref);
+  }
+
+  Widget _buildCreateTimetableGuide(
+      BuildContext context, WidgetRef ref, Responsive responsive) {
+    final semesters =
+        ref.watch(courseSearchViewModelProvider).semesters;
+    final nameController = TextEditingController();
+    int? selectedSemesterId = semesters.firstOrNull?.id;
+
+    return Center(
+      key: const ValueKey('create-guide'),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: StatefulBuilder(
+            builder: (ctx, setLocalState) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.calendar_month_outlined,
+                    size: 36,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text('첫 시간표를 만들어보세요!',
+                    style: AppTextStyles.heading2),
+                const SizedBox(height: 8),
+                Text(
+                  '학기를 선택하고 시간표를 생성하면\n과목을 추가할 수 있습니다',
+                  style: AppTextStyles.bodyLight,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                if (semesters.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: selectedSemesterId,
+                        isExpanded: true,
+                        hint: Text('학기 선택',
+                            style: AppTextStyles.bodySmall
+                                .copyWith(color: AppColors.textHint)),
+                        items: semesters
+                            .map((s) => DropdownMenuItem(
+                                  value: s.id,
+                                  child: Text(s.label,
+                                      style: AppTextStyles.body
+                                          .copyWith(fontSize: 14)),
+                                ))
+                            .toList(),
+                        onChanged: (v) =>
+                            setLocalState(() => selectedSemesterId = v),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: nameController,
+                  style: AppTextStyles.body.copyWith(fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: '시간표 이름 (선택사항)',
+                    hintStyle: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.textHint),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SutandardButton(
+                  label: '시간표 생성',
+                  onPressed: selectedSemesterId != null
+                      ? () {
+                          ref
+                              .read(timetableViewModelProvider.notifier)
+                              .createTimetable(TimetableCreate(
+                                semester: selectedSemesterId!,
+                                name: nameController.text.trim().isEmpty
+                                    ? null
+                                    : nameController.text.trim(),
+                                isMain: true,
+                              ));
+                        }
+                      : null,
+                  height: 48,
+                  fontSize: 15,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildGuestDesktopLayout(BuildContext context, WidgetRef ref) {
@@ -270,6 +389,123 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
     );
   }
 
+  Future<void> _addCourseWithConflictCheck(int courseId, String color) async {
+    final vm = ref.read(timetableViewModelProvider.notifier);
+    final repo = ref.read(courseRepositoryProvider);
+
+    try {
+      final detail = await repo.getCourseDetail(courseId);
+
+      // 이러닝(사이버강의)은 시간표 충돌이 없으므로 바로 추가
+      if (detail.isElearning || detail.schedules.isEmpty) {
+        vm.addCourse(AddCourseRequest(courseId: courseId, color: color));
+        return;
+      }
+
+      final conflicts = vm.findConflicts(detail.schedules);
+
+      if (conflicts.isNotEmpty && mounted) {
+        final names = conflicts.map((c) => c.name).join(', ');
+        final proceed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => Dialog(
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20)),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.warning_amber_rounded,
+                          size: 28, color: AppColors.warning),
+                    ),
+                    const SizedBox(height: 18),
+                    Text('시간 겹침 경고',
+                        style: AppTextStyles.heading3
+                            .copyWith(color: AppColors.textPrimary)),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: AppColors.warning.withValues(alpha: 0.2)),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            "'${detail.name}' 과목이\n다음 과목과 시간이 겹칩니다:",
+                            style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textPrimary),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            names,
+                            style: AppTextStyles.subtitle.copyWith(
+                              color: AppColors.warning,
+                              fontSize: 14,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      '그래도 추가하시겠습니까?',
+                      style: AppTextStyles.bodySmall
+                          .copyWith(color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SutandardButton(
+                            label: '취소',
+                            variant: SutandardButtonVariant.secondary,
+                            onPressed: () => Navigator.pop(ctx, false),
+                            height: 44,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SutandardButton(
+                            label: '추가',
+                            onPressed: () => Navigator.pop(ctx, true),
+                            height: 44,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        if (proceed != true) return;
+      }
+
+      vm.addCourse(AddCourseRequest(courseId: courseId, color: color));
+    } catch (_) {
+      // Fallback: add without checking
+      vm.addCourse(AddCourseRequest(courseId: courseId, color: color));
+    }
+  }
+
   Widget _buildDesktopLayout(
       BuildContext context, TimetableState state, WidgetRef ref) {
     final responsive = Responsive(context);
@@ -294,11 +530,8 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
               Expanded(
                 flex: 40,
                 child: CourseSearchPanel(
-                  onCourseAdd: (courseId, color) {
-                    ref.read(timetableViewModelProvider.notifier).addCourse(
-                          AddCourseRequest(courseId: courseId, color: color),
-                        );
-                  },
+                  onCourseAdd: (courseId, color) =>
+                      _addCourseWithConflictCheck(courseId, color),
                 ),
               ),
             ],
@@ -329,11 +562,8 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                   child: _buildTimetableSection(context, state, ref),
                 ),
                 CourseSearchPanel(
-                  onCourseAdd: (courseId, color) {
-                    ref.read(timetableViewModelProvider.notifier).addCourse(
-                          AddCourseRequest(courseId: courseId, color: color),
-                        );
-                  },
+                  onCourseAdd: (courseId, color) =>
+                      _addCourseWithConflictCheck(courseId, color),
                 ),
               ],
             ),
@@ -804,7 +1034,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
 
   Widget _buildElearningBar(TimetableState state) {
     final eLearningCourses = state.courses
-        .where((c) => c.courseDetail?.isElearning == true)
+        .where((c) => c.isElearning)
         .toList();
 
     if (eLearningCourses.isEmpty) return const SizedBox.shrink();
@@ -819,11 +1049,22 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: AppColors.accent.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Text('이러닝',
-                style: AppTextStyles.captionBold.copyWith(fontSize: 11)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.laptop_chromebook_rounded,
+                    size: 12, color: AppColors.accent),
+                const SizedBox(width: 4),
+                Text('사이버강의',
+                    style: AppTextStyles.captionBold.copyWith(
+                      fontSize: 11,
+                      color: AppColors.accent,
+                    )),
+              ],
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -831,19 +1072,124 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
               spacing: 6,
               runSpacing: 4,
               children: eLearningCourses
-                  .map((c) => Chip(
-                        label: Text(c.name,
-                            style: AppTextStyles.caption.copyWith(fontSize: 11)),
-                        backgroundColor: AppColors.surface,
-                        side: BorderSide(color: AppColors.border),
-                        padding: EdgeInsets.zero,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
+                  .map((c) => GestureDetector(
+                        onTap: () {
+                          if (c.schedules.isNotEmpty) {
+                            _showCourseDetail(context, c, c.schedules.first);
+                          } else {
+                            _showElearningCourseDetail(context, c);
+                          }
+                        },
+                        onLongPress: () =>
+                            _showDeleteConfirm(context, ref, c),
+                        child: Chip(
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: c.colorValue,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(c.name,
+                                  style: AppTextStyles.caption
+                                      .copyWith(fontSize: 11)),
+                              const SizedBox(width: 2),
+                              Text('${c.credits}학점',
+                                  style: AppTextStyles.caption.copyWith(
+                                    fontSize: 9,
+                                    color: AppColors.textTertiary,
+                                  )),
+                            ],
+                          ),
+                          backgroundColor: AppColors.surface,
+                          side: BorderSide(color: c.colorValue.withValues(alpha: 0.3)),
+                          padding: EdgeInsets.zero,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
+                        ),
                       ))
                   .toList(),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showElearningCourseDetail(
+      BuildContext context, TimetableCourse course) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: course.colorValue,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(course.name, style: AppTextStyles.heading2),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _detailRow(Icons.person_outline, course.professorName),
+            _detailRow(
+                Icons.tag_rounded, course.courseDetail?.courseCode ?? ''),
+            _detailRow(Icons.school_outlined, '${course.credits}학점'),
+            _detailRow(Icons.laptop_chromebook_rounded, '사이버강의 (이러닝)'),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _showDeleteConfirm(context, ref, course);
+                },
+                icon: const Icon(Icons.delete_outline,
+                    size: 18, color: AppColors.error),
+                label: Text('시간표에서 삭제',
+                    style: AppTextStyles.body
+                        .copyWith(color: AppColors.error, fontSize: 14)),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                      color: AppColors.error.withValues(alpha: 0.3)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1008,6 +1354,12 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
   String _icsEscape(String text) =>
       text.replaceAll(',', '\\,').replaceAll(';', '\\;').replaceAll('\n', '\\n');
 
+  static const _colorOptions = [
+    '#4A6CF7', '#10B981', '#F59E0B', '#EF4444',
+    '#8B5CF6', '#3B82F6', '#EC4899', '#06B6D4',
+    '#14B8A6', '#F97316', '#6366F1', '#84CC16',
+  ];
+
   void _showCourseDetail(
     BuildContext context,
     TimetableCourse course,
@@ -1015,35 +1367,120 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
   ) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: course.colorValue,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(course.name, style: AppTextStyles.heading2),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _detailRow(Icons.person_outline, course.professorName),
+                _detailRow(
+                    Icons.tag_rounded, course.courseDetail?.courseCode ?? ''),
+                _detailRow(Icons.room_outlined, schedule.classroomStr),
+                _detailRow(
+                  Icons.access_time_outlined,
+                  '${schedule.startTimeFormatted} - ${schedule.endTimeFormatted}',
+                ),
+                _detailRow(Icons.school_outlined, '${course.credits}학점'),
+                const SizedBox(height: 16),
+                // Color picker
+                Text('색상 변경',
+                    style: AppTextStyles.captionBold.copyWith(fontSize: 12)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _colorOptions.map((hex) {
+                    final color =
+                        Color(int.parse(hex.replaceFirst('#', '0xFF')));
+                    final isSelected =
+                        course.color.toUpperCase() == hex.toUpperCase();
+                    return GestureDetector(
+                      onTap: () {
+                        ref
+                            .read(timetableViewModelProvider.notifier)
+                            .updateCourseColor(course.id, hex);
+                        Navigator.pop(ctx);
+                      },
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.textPrimary
+                                : Colors.transparent,
+                            width: 2.5,
+                          ),
+                        ),
+                        child: isSelected
+                            ? const Icon(Icons.check_rounded,
+                                size: 16, color: Colors.white)
+                            : null,
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                // Delete button
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _showDeleteConfirm(context, ref, course);
+                    },
+                    icon: const Icon(Icons.delete_outline,
+                        size: 18, color: AppColors.error),
+                    label: Text('시간표에서 삭제',
+                        style: AppTextStyles.body
+                            .copyWith(color: AppColors.error, fontSize: 14)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                          color: AppColors.error.withValues(alpha: 0.3)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            Text(course.name, style: AppTextStyles.heading2),
-            const SizedBox(height: 16),
-            _detailRow(Icons.person_outline, course.professorName),
-            _detailRow(Icons.tag_rounded, course.courseDetail?.courseCode ?? ''),
-            _detailRow(Icons.room_outlined, schedule.classroomStr),
-            _detailRow(
-              Icons.access_time_outlined,
-              '${schedule.startTimeFormatted} - ${schedule.endTimeFormatted}',
-            ),
-            _detailRow(Icons.school_outlined, '${course.credits}학점'),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

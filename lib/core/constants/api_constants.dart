@@ -33,6 +33,8 @@ abstract final class ApiConstants {
   static const colleges = '/api/courses/colleges/';
   static const classrooms = '/api/courses/classrooms/';
   static const availableClassrooms = '/api/courses/classrooms/available/';
+  static String classroomSchedule(int id) =>
+      '/api/courses/classrooms/$id/schedule/';
 
   // Timetables
   static const timetables = '/api/timetables/';
@@ -45,6 +47,8 @@ abstract final class ApiConstants {
   // Reviews
   static const reviews = '/api/reviews/';
   static String reviewDetail(int id) => '/api/reviews/$id/';
+  static String reviewsBySubject(String courseCode) =>
+      '/api/reviews/subject/$courseCode/';
 
   // Timeouts
   static const connectTimeout = Duration(seconds: 10);

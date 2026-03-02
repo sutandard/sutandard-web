@@ -19,6 +19,8 @@ abstract class CourseRepository {
   Future<List<Subject>> getSubjects(SubjectSearchParams params);
   Future<SubjectDetail> getSubjectDetail(String courseCode,
       {int? semester});
+  Future<Map<String, dynamic>> getClassroomSchedule(int id,
+      {int? semester});
 }
 
 class CourseRepositoryImpl implements CourseRepository {
@@ -154,17 +156,35 @@ class CourseRepositoryImpl implements CourseRepository {
   @override
   Future<List<Classroom>> getClassrooms() async {
     final response = await _client.get(ApiConstants.classrooms);
-    return (response.data as List<dynamic>)
-        .map((e) => Classroom.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final data = response.data;
+    if (data is List) {
+      return data
+          .map((e) => Classroom.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    if (data is Map<String, dynamic> && data.containsKey('results')) {
+      return (data['results'] as List<dynamic>)
+          .map((e) => Classroom.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    return [];
   }
 
   @override
   Future<List<Classroom>> getAvailableClassrooms() async {
     final response = await _client.get(ApiConstants.availableClassrooms);
-    return (response.data as List<dynamic>)
-        .map((e) => Classroom.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final data = response.data;
+    if (data is List) {
+      return data
+          .map((e) => Classroom.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    if (data is Map<String, dynamic> && data.containsKey('results')) {
+      return (data['results'] as List<dynamic>)
+          .map((e) => Classroom.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    return [];
   }
 
   @override
@@ -195,6 +215,16 @@ class CourseRepositoryImpl implements CourseRepository {
       queryParameters: semester != null ? {'semester': semester} : null,
     );
     return SubjectDetail.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Map<String, dynamic>> getClassroomSchedule(int id,
+      {int? semester}) async {
+    final response = await _client.get(
+      ApiConstants.classroomSchedule(id),
+      queryParameters: semester != null ? {'semester': semester} : null,
+    );
+    return response.data as Map<String, dynamic>;
   }
 }
 

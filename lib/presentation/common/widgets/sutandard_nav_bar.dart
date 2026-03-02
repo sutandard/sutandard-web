@@ -208,8 +208,8 @@ class _MobileMenuSheet extends StatelessWidget {
   IconData _iconForLabel(String label) {
     return switch (label) {
       '나의 시간표' => Icons.calendar_today_outlined,
+      '강의 탐색' => Icons.menu_book_outlined,
       '강의 목록' => Icons.menu_book_outlined,
-      '강의 후기' => Icons.rate_review_outlined,
       '빈 강의실' => Icons.meeting_room_outlined,
       _ => Icons.circle_outlined,
     };

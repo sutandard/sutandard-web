@@ -13,6 +13,11 @@ abstract class ReviewRepository {
   Future<CourseReview> createReview(CreateReviewRequest request);
   Future<CourseReview> updateReview(int id, CreateReviewRequest request);
   Future<void> deleteReview(int id);
+  Future<PaginatedResponse<CourseReview>> getSubjectReviews(
+    String courseCode, {
+    String? professor,
+    int? semester,
+  });
 }
 
 class ReviewRepositoryImpl implements ReviewRepository {
@@ -53,7 +58,7 @@ class ReviewRepositoryImpl implements ReviewRepository {
   @override
   Future<CourseReview> updateReview(
       int id, CreateReviewRequest request) async {
-    final response = await _client.put(
+    final response = await _client.patch(
       ApiConstants.reviewDetail(id),
       data: request.toJson(),
     );
@@ -63,6 +68,26 @@ class ReviewRepositoryImpl implements ReviewRepository {
   @override
   Future<void> deleteReview(int id) async {
     await _client.delete(ApiConstants.reviewDetail(id));
+  }
+
+  @override
+  Future<PaginatedResponse<CourseReview>> getSubjectReviews(
+    String courseCode, {
+    String? professor,
+    int? semester,
+  }) async {
+    final params = <String, dynamic>{};
+    if (professor != null) params['professor'] = professor;
+    if (semester != null) params['semester'] = semester;
+
+    final response = await _client.get(
+      ApiConstants.reviewsBySubject(courseCode),
+      queryParameters: params.isEmpty ? null : params,
+    );
+    return PaginatedResponse.fromJson(
+      response.data as Map<String, dynamic>,
+      CourseReview.fromJson,
+    );
   }
 }
 

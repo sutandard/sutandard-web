@@ -121,11 +121,11 @@ class _ReviewViewState extends ConsumerState<ReviewView> {
       final repo = ref.read(reviewRepositoryProvider);
       await repo.createReview(CreateReviewRequest(
         course: _selectedCourse!.id,
+        semesterTaken: _selectedCourse!.semester,
         content: _contentController.text.trim(),
         gradeScore: _gradeScore,
         assignmentScore: _assignmentScore,
         examScore: _examScore,
-        isAnonymous: _isAnonymous,
       ));
       if (mounted) {
         showAppSnackBar(context,

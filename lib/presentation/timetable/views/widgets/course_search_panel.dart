@@ -9,8 +9,9 @@ import '../../viewmodels/course_search_viewmodel.dart';
 
 class CourseSearchPanel extends ConsumerStatefulWidget {
   final void Function(int courseId, String color)? onCourseAdd;
+  final String? initialQuery;
 
-  const CourseSearchPanel({super.key, this.onCourseAdd});
+  const CourseSearchPanel({super.key, this.onCourseAdd, this.initialQuery});
 
   @override
   ConsumerState<CourseSearchPanel> createState() => _CourseSearchPanelState();
@@ -32,6 +33,9 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
+      _searchController.text = widget.initialQuery!;
+    }
   }
 
   @override
@@ -475,15 +479,28 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
           ],
         ),
         const SizedBox(height: 12),
+        // --- 과목 정보 카드 ---
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: AppColors.background,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  Icon(Icons.info_outline_rounded,
+                      size: 14, color: AppColors.textTertiary),
+                  const SizedBox(width: 6),
+                  Text('과목 정보',
+                      style: AppTextStyles.captionBold
+                          .copyWith(fontSize: 11, color: AppColors.textSecondary)),
+                ],
+              ),
+              const SizedBox(height: 10),
               _infoLine('학수번호', course.courseCode),
               _infoLine('교수', course.professorName),
               _infoLine('분반', course.section),
@@ -493,6 +510,8 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
                 _infoLine('학과', course.departmentName),
               if (course.semesterStr.isNotEmpty)
                 _infoLine('학기', course.semesterStr),
+              if (course.isElearning)
+                _infoLine('수업방식', '사이버강의 (이러닝)'),
               if (course.schedules.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text('시간표', style: AppTextStyles.captionBold),
@@ -505,39 +524,58 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
                       ),
                     )),
               ],
+              if (course.reviewStats != null) ...[
+                const SizedBox(height: 10),
+                _buildReviewStats(course.reviewStats!),
+              ],
             ],
           ),
         ),
-        if (course.reviewStats != null) ...[
-          const SizedBox(height: 12),
-          _buildReviewStats(course.reviewStats!),
-        ],
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Text('강의 후기', style: AppTextStyles.subtitle.copyWith(fontSize: 14)),
-            const Spacer(),
-            Text('${reviews.length}개',
-                style: AppTextStyles.caption
-                    .copyWith(color: AppColors.textTertiary)),
-          ],
+        const SizedBox(height: 12),
+        // --- 후기 섹션 카드 ---
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.rate_review_outlined,
+                      size: 14, color: AppColors.textTertiary),
+                  const SizedBox(width: 6),
+                  Text('강의 후기',
+                      style: AppTextStyles.captionBold
+                          .copyWith(fontSize: 11, color: AppColors.textSecondary)),
+                  const Spacer(),
+                  Text('${reviews.length}개',
+                      style: AppTextStyles.caption
+                          .copyWith(color: AppColors.textTertiary)),
+                ],
+              ),
+              const SizedBox(height: 10),
+              if (reviews.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                    child: Text('등록된 후기가 없습니다',
+                        style: AppTextStyles.bodySmall
+                            .copyWith(color: AppColors.textTertiary)),
+                  ),
+                )
+              else
+                ...reviews.map((r) => _ReviewCard(review: r)),
+            ],
+          ),
         ),
-        const SizedBox(height: 8),
-        if (reviews.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
-              child: Text('등록된 후기가 없습니다',
-                  style: AppTextStyles.bodySmall
-                      .copyWith(color: AppColors.textTertiary)),
-            ),
-          )
-        else
-          ...reviews.map((r) => _ReviewCard(review: r)),
       ],
     );
   }
@@ -890,12 +928,14 @@ class _SectionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheduleText = section.schedules.isNotEmpty
-        ? section.schedules
-            .map((s) =>
-                '${s.dayDisplay} ${s.startTimeFormatted}~${s.endTimeFormatted} (${s.classroomStr})')
-            .join(', ')
-        : '시간 미정';
+    final scheduleText = section.isElearning
+        ? '사이버강의 (이러닝)'
+        : section.schedules.isNotEmpty
+            ? section.schedules
+                .map((s) =>
+                    '${s.dayDisplay} ${s.startTimeFormatted}~${s.endTimeFormatted} (${s.classroomStr})')
+                .join(', ')
+            : '시간 미정';
 
     return InkWell(
       onTap: onTap,

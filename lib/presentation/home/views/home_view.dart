@@ -29,35 +29,41 @@ class HomeView extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            SutandardNavBar(
-              navItems: buildMainNavItems(context, '/'),
-              onLoginTap: authState.isAuthenticated
-                  ? null
-                  : () => context.go('/login'),
-              showProfile: authState.isAuthenticated,
-              userName: authState.user?.name,
-              onLogoutTap: () => ref.read(authViewModelProvider.notifier).logout(),
-              onDeleteAccountTap: () async {
-                final success = await ref.read(authViewModelProvider.notifier).deleteAccount();
-                if (success && context.mounted) {
-                  context.go('/');
-                }
-              },
+      body: Column(
+        children: [
+          SutandardNavBar(
+            navItems: buildMainNavItems(context, '/'),
+            onLoginTap: authState.isAuthenticated
+                ? null
+                : () => context.go('/login'),
+            showProfile: authState.isAuthenticated,
+            userName: authState.user?.name,
+            onLogoutTap: () => ref.read(authViewModelProvider.notifier).logout(),
+            onDeleteAccountTap: () async {
+              final success = await ref.read(authViewModelProvider.notifier).deleteAccount();
+              if (success && context.mounted) {
+                context.go('/');
+              }
+            },
+          ),
+          Container(height: 1, color: AppColors.border),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 28),
+                  const _HeroSection(),
+                  const SizedBox(height: 32),
+                  _MainDashboard(),
+                  const SizedBox(height: 28),
+                  const _QuickAccessCards(),
+                  const SizedBox(height: 48),
+                  const HomeFooter(),
+                ],
+              ),
             ),
-            Container(height: 1, color: AppColors.border),
-            const SizedBox(height: 28),
-            const _HeroSection(),
-            const SizedBox(height: 32),
-            _MainDashboard(),
-            const SizedBox(height: 28),
-            const _QuickAccessCards(),
-            const SizedBox(height: 48),
-            const HomeFooter(),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -160,7 +166,12 @@ class _HeroSectionState extends State<_HeroSection> {
                 HomeSearchPanel(
                   onSearch: (filters) {
                     setState(() => _showSearchPanel = false);
-                    context.go('/timetable');
+                    final query = filters.query;
+                    if (query.isNotEmpty) {
+                      context.go('/courses?q=${Uri.encodeComponent(query)}');
+                    } else {
+                      context.go('/courses');
+                    }
                   },
                   onClose: () => setState(() => _showSearchPanel = false),
                 ),
@@ -274,9 +285,88 @@ class _TimetableCard extends ConsumerWidget {
     if (ttState.courses.isEmpty) {
       return _emptyTimetable(context);
     }
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: TimetableGrid(courses: ttState.courses),
+
+    final elearningCourses =
+        ttState.courses.where((c) => c.isElearning).toList();
+
+    return Column(
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: TimetableGrid(courses: ttState.courses),
+          ),
+        ),
+        if (elearningCourses.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: AppColors.border)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.laptop_chromebook_rounded,
+                          size: 11, color: AppColors.accent),
+                      const SizedBox(width: 3),
+                      Text('사이버강의',
+                          style: AppTextStyles.captionBold.copyWith(
+                            fontSize: 10,
+                            color: AppColors.accent,
+                          )),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: elearningCourses
+                        .map((c) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                    color:
+                                        c.colorValue.withValues(alpha: 0.3)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      color: c.colorValue,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(c.name,
+                                      style: AppTextStyles.caption
+                                          .copyWith(fontSize: 10)),
+                                ],
+                              ),
+                            ))
+                        .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 

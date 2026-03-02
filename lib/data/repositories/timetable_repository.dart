@@ -10,6 +10,8 @@ abstract class TimetableRepository {
   Future<Timetable> updateTimetable(int id, {String? name, bool? isMain});
   Future<void> deleteTimetable(int id);
   Future<TimetableCourse> addCourse(int timetableId, AddCourseRequest request);
+  Future<TimetableCourse> updateCourse(
+      int timetableId, int timetableCourseId, {String? color});
   Future<void> removeCourse(int timetableId, int timetableCourseId);
   Future<Map<String, dynamic>?> getCurrentClass();
 }
@@ -22,9 +24,18 @@ class TimetableRepositoryImpl implements TimetableRepository {
   @override
   Future<List<Timetable>> getTimetables() async {
     final response = await _client.get(ApiConstants.timetables);
-    return (response.data as List<dynamic>)
-        .map((e) => Timetable.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final data = response.data;
+    if (data is List) {
+      return data
+          .map((e) => Timetable.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    if (data is Map<String, dynamic> && data.containsKey('results')) {
+      return (data['results'] as List<dynamic>)
+          .map((e) => Timetable.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    return [];
   }
 
   @override
@@ -71,6 +82,18 @@ class TimetableRepositoryImpl implements TimetableRepository {
   }
 
   @override
+  Future<TimetableCourse> updateCourse(
+      int timetableId, int timetableCourseId, {String? color}) async {
+    final data = <String, dynamic>{};
+    if (color != null) data['color'] = color;
+    final response = await _client.patch(
+      ApiConstants.timetableCourseDetail(timetableId, timetableCourseId),
+      data: data,
+    );
+    return TimetableCourse.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  @override
   Future<void> removeCourse(int timetableId, int timetableCourseId) async {
     await _client.delete(
       ApiConstants.timetableCourseDetail(timetableId, timetableCourseId),
@@ -80,7 +103,9 @@ class TimetableRepositoryImpl implements TimetableRepository {
   @override
   Future<Map<String, dynamic>?> getCurrentClass() async {
     final response = await _client.get(ApiConstants.currentClass);
-    return response.data as Map<String, dynamic>?;
+    final data = response.data;
+    if (data is Map<String, dynamic>) return data;
+    return null;
   }
 }
 

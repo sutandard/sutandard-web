@@ -39,7 +39,7 @@ class _AvailableClassroomsViewState
   late final TabController _tabController;
   Classroom? _selectedClassroom;
   bool _loadingSchedule = false;
-  List<CourseDetail> _classroomCourses = [];
+  List<TimetableCourse> _classroomTimetableCourses = [];
   String _searchQuery = '';
 
   @override
@@ -54,27 +54,83 @@ class _AvailableClassroomsViewState
     super.dispose();
   }
 
+  static const _colors = [
+    '#4A6CF7', '#10B981', '#F59E0B', '#EF4444',
+    '#8B5CF6', '#3B82F6', '#EC4899', '#06B6D4',
+  ];
+
   Future<void> _loadClassroomSchedule(Classroom classroom) async {
     setState(() {
       _selectedClassroom = classroom;
       _loadingSchedule = true;
-      _classroomCourses = [];
+      _classroomTimetableCourses = [];
     });
 
     try {
       final repo = ref.read(courseRepositoryProvider);
-      final response = await repo.getCourses(
-        CourseSearchParams(classroom: classroom.id),
-      );
-      final details = <CourseDetail>[];
-      for (final course in response.results) {
-        try {
-          details.add(await repo.getCourseDetail(course.id));
-        } catch (_) {}
+      final scheduleData = await repo.getClassroomSchedule(classroom.id);
+
+      // API returns { classroom: {...}, semester: {...}, schedules: [...] }
+      final schedulesList = scheduleData['schedules'] as List<dynamic>? ?? [];
+
+      // Group schedules by course_code + section to create TimetableCourse entries
+      final grouped = <String, List<Map<String, dynamic>>>{};
+      for (final item in schedulesList) {
+        if (item is Map<String, dynamic>) {
+          final key =
+              '${item['course_code'] ?? ''}_${item['section'] ?? ''}';
+          grouped.putIfAbsent(key, () => []).add(item);
+        }
       }
+
+      final result = <TimetableCourse>[];
+      var colorIndex = 0;
+
+      for (final entry in grouped.entries) {
+        final items = entry.value;
+        final first = items.first;
+
+        // Build CourseSchedule objects from the flat schedule data
+        final schedules = items.map((item) {
+          return CourseSchedule(
+            id: item['id'] as int? ?? 0,
+            dayOfWeek: item['day_of_week'] as String? ?? '',
+            dayDisplay: item['day_display'] as String? ?? '',
+            startTime: item['start_time'] as String? ?? '00:00',
+            endTime: item['end_time'] as String? ?? '00:00',
+            classroom: classroom.id,
+            classroomStr: '${classroom.buildingName} ${classroom.roomNumber}',
+          );
+        }).toList();
+
+        // Build a minimal CourseList for display
+        final courseDetail = CourseList(
+          id: first['id'] as int? ?? 0,
+          courseCode: first['course_code'] as String? ?? '',
+          name: first['course_name'] as String? ?? '',
+          professorName: first['professor_name'] as String? ?? '',
+          semester: 0,
+          semesterStr: '',
+          credits: 0,
+          section: first['section'] as String? ?? '',
+          courseType: '',
+          courseTypeDisplay: '',
+          departmentName: '',
+        );
+
+        result.add(TimetableCourse(
+          id: -(colorIndex + 1), // negative IDs for synthetic entries
+          course: courseDetail.id,
+          courseDetail: courseDetail,
+          schedules: schedules,
+          color: _colors[colorIndex % _colors.length],
+        ));
+        colorIndex++;
+      }
+
       if (mounted) {
         setState(() {
-          _classroomCourses = details;
+          _classroomTimetableCourses = result;
           _loadingSchedule = false;
         });
       }
@@ -83,32 +139,6 @@ class _AvailableClassroomsViewState
         setState(() => _loadingSchedule = false);
       }
     }
-  }
-
-  List<TimetableCourse> _toTimetableCourses() {
-    if (_classroomCourses.isEmpty || _selectedClassroom == null) return [];
-    final classroomId = _selectedClassroom!.id;
-    const colors = [
-      '#4A6CF7', '#10B981', '#F59E0B', '#EF4444',
-      '#8B5CF6', '#3B82F6', '#EC4899', '#06B6D4',
-    ];
-    final result = <TimetableCourse>[];
-    var colorIndex = 0;
-    for (final course in _classroomCourses) {
-      final filteredSchedules = course.schedules
-          .where((s) => s.classroom == classroomId)
-          .toList();
-      if (filteredSchedules.isEmpty) continue;
-      result.add(TimetableCourse(
-        id: course.id,
-        course: course.id,
-        courseDetail: course,
-        schedules: filteredSchedules,
-        color: colors[colorIndex % colors.length],
-      ));
-      colorIndex++;
-    }
-    return result;
   }
 
   @override
@@ -166,7 +196,7 @@ class _AvailableClassroomsViewState
                       IconButton(
                         onPressed: () => setState(() {
                           _selectedClassroom = null;
-                          _classroomCourses = [];
+                          _classroomTimetableCourses = [];
                         }),
                         icon: const Icon(Icons.arrow_back_rounded,
                             color: AppColors.textTertiary),
@@ -427,7 +457,7 @@ class _AvailableClassroomsViewState
                       ),
                     ),
                     if (!_loadingSchedule)
-                      Text('${_classroomCourses.length}개 수업',
+                      Text('${_classroomTimetableCourses.length}개 수업',
                           style: AppTextStyles.captionBold),
                   ],
                 ),
@@ -439,7 +469,7 @@ class _AvailableClassroomsViewState
           child: _loadingSchedule
               ? const Center(
                   child: CircularProgressIndicator(strokeWidth: 2))
-              : _classroomCourses.isEmpty
+              : _classroomTimetableCourses.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -462,7 +492,7 @@ class _AvailableClassroomsViewState
                           child: Padding(
                             padding: const EdgeInsets.all(8),
                             child: TimetableGrid(
-                              courses: _toTimetableCourses(),
+                              courses: _classroomTimetableCourses,
                             ),
                           ),
                         ),
@@ -475,7 +505,7 @@ class _AvailableClassroomsViewState
   }
 
   Widget _buildCourseListBar() {
-    if (_classroomCourses.isEmpty) return const SizedBox.shrink();
+    if (_classroomTimetableCourses.isEmpty) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -484,18 +514,32 @@ class _AvailableClassroomsViewState
       child: Wrap(
         spacing: 6,
         runSpacing: 6,
-        children: _classroomCourses.map((c) {
+        children: _classroomTimetableCourses.map((c) {
           return Container(
             padding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: c.colorValue.withValues(alpha: 0.3)),
             ),
-            child: Text(
-              '${c.name} (${c.professorName})',
-              style: AppTextStyles.caption.copyWith(fontSize: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: c.colorValue,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '${c.name} (${c.professorName})',
+                  style: AppTextStyles.caption.copyWith(fontSize: 12),
+                ),
+              ],
             ),
           );
         }).toList(),

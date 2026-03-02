@@ -9,7 +9,6 @@ import 'presentation/classroom/views/available_classrooms_view.dart';
 import 'presentation/courses/views/course_list_view.dart';
 import 'presentation/home/views/home_view.dart';
 import 'presentation/professor/views/professor_schedule_view.dart';
-import 'presentation/review/views/review_write_view.dart';
 import 'presentation/timetable/views/timetable_view.dart';
 import 'presentation/timetable/views/wizard_view.dart';
 
@@ -56,52 +55,60 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         name: 'home',
-        builder: (context, state) => const HomeView(),
+        pageBuilder: (context, state) =>
+            _fadePage(state, const HomeView()),
       ),
       GoRoute(
         path: '/login',
         name: 'login',
-        builder: (context, state) => const LoginView(),
+        pageBuilder: (context, state) =>
+            _fadePage(state, const LoginView()),
       ),
       GoRoute(
         path: '/register',
         name: 'register',
-        builder: (context, state) => const RegisterView(),
+        pageBuilder: (context, state) =>
+            _fadePage(state, const RegisterView()),
       ),
       GoRoute(
         path: '/forgot-password',
         name: 'forgot-password',
-        builder: (context, state) => const ForgotPasswordView(),
+        pageBuilder: (context, state) =>
+            _fadePage(state, const ForgotPasswordView()),
       ),
       GoRoute(
         path: '/timetable',
         name: 'timetable',
-        builder: (context, state) => const TimetableView(),
+        pageBuilder: (context, state) =>
+            _fadePage(state, const TimetableView()),
       ),
       GoRoute(
         path: '/courses',
         name: 'courses',
-        builder: (context, state) => const CourseListView(),
-      ),
-      GoRoute(
-        path: '/reviews',
-        name: 'reviews',
-        builder: (context, state) => const ReviewView(),
+        pageBuilder: (context, state) => _fadePage(
+          state,
+          CourseListView(
+            initialQuery: state.uri.queryParameters['q'],
+          ),
+        ),
       ),
       GoRoute(
         path: '/wizard',
         name: 'wizard',
-        builder: (context, state) => const WizardView(),
+        pageBuilder: (context, state) =>
+            _fadePage(state, const WizardView()),
       ),
       GoRoute(
         path: '/classrooms',
         name: 'classrooms',
-        builder: (context, state) => const AvailableClassroomsView(),
+        pageBuilder: (context, state) =>
+            _fadePage(state, const AvailableClassroomsView()),
       ),
       GoRoute(
         path: '/professor-schedule',
         name: 'professor-schedule',
-        builder: (context, state) => const ProfessorScheduleView(),
+        pageBuilder: (context, state) =>
+            _fadePage(state, const ProfessorScheduleView()),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
@@ -138,3 +145,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
   );
 });
+
+CustomTransitionPage<void> _fadePage(GoRouterState state, Widget child) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(opacity: animation, child: child);
+    },
+  );
+}

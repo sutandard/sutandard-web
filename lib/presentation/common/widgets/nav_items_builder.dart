@@ -11,14 +11,9 @@ List<NavItem> buildMainNavItems(
         onTap: () => context.go('/timetable'),
       ),
       NavItem(
-        label: '강의 목록',
+        label: '강의 탐색',
         isActive: currentLocation.startsWith('/courses'),
         onTap: () => context.go('/courses'),
-      ),
-      NavItem(
-        label: '강의 후기',
-        isActive: currentLocation.startsWith('/reviews'),
-        onTap: () => context.go('/reviews'),
       ),
       NavItem(
         label: '빈 강의실',

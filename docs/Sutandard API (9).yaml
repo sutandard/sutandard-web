@@ -787,6 +787,33 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/reviews/subject/{course_code}/:
+    get:
+      operationId: reviews_subject_retrieve
+      description: course_code로 해당 과목의 모든 분반·학기 후기를 통합 조회합니다. 평균 점수 통계와 후기 목록을 함께
+        반환합니다.
+      summary: 과목 단위 후기 조회 (전 분반·전 학기)
+      parameters:
+      - in: path
+        name: course_code
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: professor
+        schema:
+          type: string
+        description: 교수명으로 필터
+      - in: query
+        name: semester
+        schema:
+          type: integer
+        description: 특정 학기 PK로 필터 (미제공 시 전체 학기)
+      tags:
+      - 후기
+      responses:
+        '200':
+          description: No response body
   /api/timetables/:
     get:
       operationId: timetables_list
@@ -1650,9 +1677,10 @@ components:
           readOnly: true
           title: 생성일
         courses:
-          type: array
-          items:
-            $ref: '#/components/schemas/TimetableCourse'
+          type: string
+          readOnly: true
+        online_courses:
+          type: string
           readOnly: true
     PatchedUser:
       type: object
@@ -1854,14 +1882,16 @@ components:
           readOnly: true
           title: 생성일
         courses:
-          type: array
-          items:
-            $ref: '#/components/schemas/TimetableCourse'
+          type: string
+          readOnly: true
+        online_courses:
+          type: string
           readOnly: true
       required:
       - courses
       - created_at
       - id
+      - online_courses
       - semester
       - semester_str
     TimetableCourse:
@@ -1886,10 +1916,14 @@ components:
           type: string
           title: 색상 (HEX)
           maxLength: 7
+        is_elearning:
+          type: boolean
+          readOnly: true
       required:
       - course
       - course_detail
       - id
+      - is_elearning
       - schedules
     TimetableCreate:
       type: object
