@@ -1,0 +1,57 @@
+name: sutandard_app
+description: "수원대학교 학우들을 위한 시간표 관리 시스템 | Sutandard"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.8.1
+  dio: ^5.7.0
+  flutter_svg: ^2.0.17
+  shared_preferences: ^2.3.4
+  url_launcher: ^6.3.2
+  pretty_dio_logger: ^1.4.0
+  path_provider: ^2.1.5
+  share_plus: ^12.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+
+  fonts:
+    - family: SUITE
+      fonts:
+        - asset: assets/fonts/SUITE/SUITE-Light.otf
+          weight: 300
+        - asset: assets/fonts/SUITE/SUITE-Regular.otf
+          weight: 400
+        - asset: assets/fonts/SUITE/SUITE-Medium.otf
+          weight: 500
+        - asset: assets/fonts/SUITE/SUITE-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/SUITE/SUITE-Bold.otf
+          weight: 700
+        - asset: assets/fonts/SUITE/SUITE-ExtraBold.otf
+          weight: 800
+        - asset: assets/fonts/SUITE/SUITE-Heavy.otf
+          weight: 900
+    - family: InstrumentSerif
+      fonts:
+        - asset: assets/fonts/Instrument_Serif/InstrumentSerif-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Instrument_Serif/InstrumentSerif-Italic.ttf
+          weight: 400
+          style: italic
