@@ -1,7 +1,8 @@
 class CourseReview {
   final int id;
   final int course;
-  final String authorId;
+  final String authorName;
+  final bool isAnonymous;
   final int? semesterTaken;
   final String semesterTakenStr;
   final String content;
@@ -17,7 +18,8 @@ class CourseReview {
   const CourseReview({
     required this.id,
     required this.course,
-    required this.authorId,
+    required this.authorName,
+    this.isAnonymous = false,
     this.semesterTaken,
     required this.semesterTakenStr,
     required this.content,
@@ -34,8 +36,9 @@ class CourseReview {
   factory CourseReview.fromJson(Map<String, dynamic> json) {
     return CourseReview(
       id: json['id'] as int,
-      course: json['course'] as int,
-      authorId: json['author_id'] as String,
+      course: json['course_id'] as int? ?? json['course'] as int,
+      authorName: json['author_name'] as String? ?? json['author_id'] as String? ?? '',
+      isAnonymous: json['is_anonymous'] as bool? ?? false,
       semesterTaken: json['semester_taken'] as int?,
       semesterTakenStr: json['semester_taken_str'] as String? ?? '',
       content: json['content'] as String,
@@ -72,6 +75,7 @@ class CreateReviewRequest {
   final int gradeScore;
   final int assignmentScore;
   final int examScore;
+  final bool isAnonymous;
 
   const CreateReviewRequest({
     required this.course,
@@ -80,6 +84,7 @@ class CreateReviewRequest {
     required this.gradeScore,
     required this.assignmentScore,
     required this.examScore,
+    this.isAnonymous = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -89,5 +94,6 @@ class CreateReviewRequest {
         'grade_score': gradeScore,
         'assignment_score': assignmentScore,
         'exam_score': examScore,
+        'is_anonymous': isAnonymous,
       };
 }

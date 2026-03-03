@@ -36,6 +36,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
   final _timetableKey = GlobalKey();
   final List<TimetableCourse> _mockCourses = [];
   int _mockIdCounter = -1;
+  TimetableCourse? _previewCourse;
 
   void _addMockCourse(int courseId, String color) async {
     try {
@@ -59,11 +60,45 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
     });
   }
 
+  void _onCourseHoverEnter(CourseDetail course) {
+    setState(() {
+      _previewCourse = TimetableCourse(
+        id: -9999,
+        course: course.id,
+        courseDetail: CourseList(
+          id: course.id,
+          courseCode: course.courseCode,
+          name: course.name,
+          professorName: course.professorName,
+          semester: course.semester,
+          semesterStr: course.semesterStr,
+          credits: course.credits,
+          section: course.section,
+          courseType: course.courseType,
+          courseTypeDisplay: course.courseTypeDisplay,
+        ),
+        schedules: course.schedules,
+        color: '#4A6CF7',
+      );
+    });
+  }
+
+  void _onCourseHoverExit() {
+    setState(() => _previewCourse = null);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(timetableViewModelProvider);
     final authState = ref.watch(authViewModelProvider);
     final responsive = Responsive(context);
+
+    // 로그인 후 시간표 자동 새로고침
+    ref.listen<AuthState>(authViewModelProvider, (prev, next) {
+      if (prev != null && !prev.isAuthenticated && next.isAuthenticated) {
+        ref.read(timetableViewModelProvider.notifier).refresh();
+      }
+    });
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -226,12 +261,16 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                   label: '시간표 생성',
                   onPressed: selectedSemesterId != null
                       ? () {
+                          final defaultName = semesters
+                              .where((s) => s.id == selectedSemesterId)
+                              .firstOrNull
+                              ?.label;
                           ref
                               .read(timetableViewModelProvider.notifier)
                               .createTimetable(TimetableCreate(
                                 semester: selectedSemesterId!,
                                 name: nameController.text.trim().isEmpty
-                                    ? null
+                                    ? defaultName
                                     : nameController.text.trim(),
                                 isMain: true,
                               ));
@@ -273,6 +312,8 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                 child: CourseSearchPanel(
                   onCourseAdd: (courseId, color) =>
                       _addMockCourse(courseId, color),
+                  onCourseHoverEnter: _onCourseHoverEnter,
+                  onCourseHoverExit: _onCourseHoverExit,
                 ),
               ),
             ],
@@ -380,6 +421,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                     padding: const EdgeInsets.all(8),
                     child: TimetableGrid(
                       courses: _mockCourses,
+                      previewCourses: _previewCourse != null ? [_previewCourse!] : null,
                       onCourseLongPress: _removeMockCourse,
                     ),
                   ),
@@ -532,6 +574,8 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                 child: CourseSearchPanel(
                   onCourseAdd: (courseId, color) =>
                       _addCourseWithConflictCheck(courseId, color),
+                  onCourseHoverEnter: _onCourseHoverEnter,
+                  onCourseHoverExit: _onCourseHoverExit,
                 ),
               ),
             ],
@@ -597,6 +641,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                         padding: const EdgeInsets.all(8),
                         child: TimetableGrid(
                           courses: state.courses,
+                          previewCourses: _previewCourse != null ? [_previewCourse!] : null,
                           onCourseTap: (course, schedule) =>
                               _showCourseDetail(context, course, schedule),
                           onCourseLongPress: (course) =>
@@ -932,14 +977,33 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                         label: '생성',
                         onPressed: selectedSemesterId != null
                             ? () {
+                                String name;
+                                if (nameController.text.trim().isNotEmpty) {
+                                  name = nameController.text.trim();
+                                } else {
+                                  final label = semesters
+                                      .where((s) => s.id == selectedSemesterId)
+                                      .firstOrNull
+                                      ?.label ?? '시간표';
+                                  final existingNames = state.allTimetables
+                                      .map((t) => t.name)
+                                      .toSet();
+                                  if (!existingNames.contains(label)) {
+                                    name = label;
+                                  } else {
+                                    var n = 2;
+                                    while (existingNames.contains('$label ($n)')) {
+                                      n++;
+                                    }
+                                    name = '$label ($n)';
+                                  }
+                                }
                                 ref
                                     .read(
                                         timetableViewModelProvider.notifier)
                                     .createTimetable(TimetableCreate(
                                       semester: selectedSemesterId!,
-                                      name: nameController.text.trim().isEmpty
-                                          ? null
-                                          : nameController.text.trim(),
+                                      name: name,
                                     ));
                                 Navigator.pop(ctx);
                               }
@@ -1427,9 +1491,14 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                         course.color.toUpperCase() == hex.toUpperCase();
                     return GestureDetector(
                       onTap: () {
+                        final current = ref.read(timetableViewModelProvider);
+                        if (!(current.timetable?.courses.any((c) => c.course == course.course) ?? false)) {
+                          Navigator.pop(ctx);
+                          return;
+                        }
                         ref
                             .read(timetableViewModelProvider.notifier)
-                            .updateCourseColor(course.id, hex);
+                            .updateCourseColor(course.course, hex);
                         Navigator.pop(ctx);
                       },
                       child: Container(
@@ -1547,9 +1616,14 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
+                        final current = ref.read(timetableViewModelProvider);
+                        if (!(current.timetable?.courses.any((c) => c.course == course.course) ?? false)) {
+                          Navigator.pop(ctx);
+                          return;
+                        }
                         ref
                             .read(timetableViewModelProvider.notifier)
-                            .removeCourse(course.id);
+                            .removeCourse(course.course);
                         Navigator.pop(ctx);
                       },
                       style: ElevatedButton.styleFrom(

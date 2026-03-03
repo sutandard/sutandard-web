@@ -377,15 +377,23 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                ids:
-                  type: array
-                  items:
-                    type: integer
+              $ref: '#/components/schemas/CoursesBatchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CoursesBatchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CoursesBatchRequest'
+        required: true
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CourseDetail'
+          description: ''
   /api/courses/classrooms/:
     get:
       operationId: courses_classrooms_list
@@ -434,7 +442,11 @@ paths:
       - 과목
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassroomScheduleResponse'
+          description: ''
   /api/courses/classrooms/available/:
     get:
       operationId: courses_classrooms_available_list
@@ -564,7 +576,11 @@ paths:
       - 교수
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfessorOfficeHoursResponse'
+          description: ''
   /api/courses/professors/{id}/schedule/:
     get:
       operationId: courses_professors_schedule_retrieve
@@ -585,7 +601,11 @@ paths:
       - 교수
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfessorScheduleResponse'
+          description: ''
   /api/courses/semesters/:
     get:
       operationId: courses_semesters_list
@@ -686,9 +706,16 @@ paths:
   /api/reviews/:
     get:
       operationId: reviews_list
-      description: 'GET: 강의 후기 목록 조회 (course_id 쿼리파라미터로 필터링). POST: 후기 작성 (인증 필요).'
+      description: |-
+        GET: 강의 후기 목록 조회 (course_id 쿼리파라미터로 필터링 가능).
+        POST: 후기 작성 (인증 필요). is_anonymous=true로 익명 후기 작성 가능.
       summary: 강의 후기 목록 조회 / 작성
       parameters:
+      - in: query
+        name: course_id
+        schema:
+          type: integer
+        description: 과목 PK로 필터
       - name: ordering
         required: false
         in: query
@@ -703,6 +730,10 @@ paths:
           type: integer
       tags:
       - 후기
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      - {}
       responses:
         '200':
           content:
@@ -712,8 +743,16 @@ paths:
           description: ''
     post:
       operationId: reviews_create
-      description: 'GET: 강의 후기 목록 조회 (course_id 쿼리파라미터로 필터링). POST: 후기 작성 (인증 필요).'
+      description: |-
+        GET: 강의 후기 목록 조회 (course_id 쿼리파라미터로 필터링 가능).
+        POST: 후기 작성 (인증 필요). is_anonymous=true로 익명 후기 작성 가능.
       summary: 강의 후기 목록 조회 / 작성
+      parameters:
+      - in: query
+        name: course_id
+        schema:
+          type: integer
+        description: 과목 PK로 필터
       tags:
       - 후기
       requestBody:
@@ -728,6 +767,9 @@ paths:
             schema:
               $ref: '#/components/schemas/CourseReview'
         required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
       responses:
         '201':
           content:
@@ -738,7 +780,9 @@ paths:
   /api/reviews/{id}/:
     patch:
       operationId: reviews_partial_update
-      description: 'PATCH: 내 후기 수정. DELETE: 내 후기 삭제.'
+      description: |-
+        PATCH: 내 후기 수정 (content, *_score, is_anonymous 등).
+        DELETE: 내 후기 삭제.
       summary: 강의 후기 수정 / 삭제
       parameters:
       - in: path
@@ -771,7 +815,9 @@ paths:
           description: ''
     delete:
       operationId: reviews_destroy
-      description: 'PATCH: 내 후기 수정. DELETE: 내 후기 삭제.'
+      description: |-
+        PATCH: 내 후기 수정 (content, *_score, is_anonymous 등).
+        DELETE: 내 후기 삭제.
       summary: 강의 후기 수정 / 삭제
       parameters:
       - in: path
@@ -813,7 +859,11 @@ paths:
       - 후기
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectReviewResponse'
+          description: ''
   /api/timetables/:
     get:
       operationId: timetables_list
@@ -1028,8 +1078,47 @@ paths:
                 $ref: '#/components/schemas/TimetableCourse'
           description: ''
   /api/timetables/{id}/courses/{course_id}/:
+    patch:
+      operationId: timetables_courses_partial_update
+      description: 'PATCH: 과목 색상을 변경합니다. DELETE: 시간표에서 과목을 삭제합니다.'
+      summary: 시간표 과목 색상 수정
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - 시간표
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateCourseColor'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateCourseColor'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateCourseColor'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimetableCourse'
+          description: ''
     delete:
       operationId: timetables_courses_destroy
+      description: 'PATCH: 과목 색상을 변경합니다. DELETE: 시간표에서 과목을 삭제합니다.'
       summary: 시간표에서 과목 삭제
       parameters:
       - in: path
@@ -1062,7 +1151,11 @@ paths:
       - jwtAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentNextCourseResponse'
+          description: ''
 components:
   schemas:
     AddCourse:
@@ -1117,6 +1210,53 @@ components:
       - building_name
       - id
       - room_number
+    ClassroomScheduleEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        day_of_week:
+          type: string
+        day_display:
+          type: string
+        start_time:
+          type: string
+        end_time:
+          type: string
+        course_code:
+          type: string
+        course_name:
+          type: string
+        section:
+          type: string
+        professor_name:
+          type: string
+          nullable: true
+      required:
+      - course_code
+      - course_name
+      - day_display
+      - day_of_week
+      - end_time
+      - id
+      - professor_name
+      - section
+      - start_time
+    ClassroomScheduleResponse:
+      type: object
+      properties:
+        classroom:
+          $ref: '#/components/schemas/Classroom'
+        semester:
+          $ref: '#/components/schemas/Semester'
+        schedules:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassroomScheduleEntry'
+      required:
+      - classroom
+      - schedules
+      - semester
     College:
       type: object
       properties:
@@ -1297,13 +1437,12 @@ components:
         course:
           type: integer
           title: 과목
-        author_id:
+        author_name:
           type: string
           readOnly: true
         semester_taken:
           type: integer
           nullable: true
-          title: 수강 학기
         semester_taken_str:
           type: string
           readOnly: true
@@ -1325,6 +1464,9 @@ components:
           maximum: 5
           minimum: 1
           title: 시험 점수
+        is_anonymous:
+          type: boolean
+          title: 익명 여부
         total_score:
           type: number
           format: double
@@ -1341,7 +1483,7 @@ components:
           title: 수정일
       required:
       - assignment_score
-      - author_id
+      - author_name
       - content
       - course
       - created_at
@@ -1418,6 +1560,30 @@ components:
         * `선수` - 선수과목
         * `RT` - RT
         * `기타` - 기타
+    CoursesBatchRequest:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+          description: 과목 PK 배열
+      required:
+      - ids
+    CurrentNextCourseResponse:
+      type: object
+      properties:
+        next:
+          allOf:
+          - $ref: '#/components/schemas/ScheduleItem'
+          title: Current
+        online_courses:
+          type: array
+          items:
+            type: string
+      required:
+      - next
+      - online_courses
     DayOfWeekEnum:
       enum:
       - MON
@@ -1610,13 +1776,12 @@ components:
         course:
           type: integer
           title: 과목
-        author_id:
+        author_name:
           type: string
           readOnly: true
         semester_taken:
           type: integer
           nullable: true
-          title: 수강 학기
         semester_taken_str:
           type: string
           readOnly: true
@@ -1638,6 +1803,9 @@ components:
           maximum: 5
           minimum: 1
           title: 시험 점수
+        is_anonymous:
+          type: boolean
+          title: 익명 여부
         total_score:
           type: number
           format: double
@@ -1682,6 +1850,13 @@ components:
         online_courses:
           type: string
           readOnly: true
+    PatchedUpdateCourseColor:
+      type: object
+      properties:
+        color:
+          type: string
+          description: 'HEX 색상 코드 (예: #FF5733)'
+          pattern: ^#[0-9A-Fa-f]{6}$
     PatchedUser:
       type: object
       properties:
@@ -1773,6 +1948,76 @@ components:
       - id
       - name
       - office_hours
+    ProfessorOfficeHoursResponse:
+      type: object
+      properties:
+        professor_id:
+          type: integer
+        professor_name:
+          type: string
+        office_location:
+          type: string
+          nullable: true
+        office_hours:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfficeHour'
+      required:
+      - office_hours
+      - office_location
+      - professor_id
+      - professor_name
+    ProfessorScheduleEntry:
+      type: object
+      description: 교수 시간표용 — 과목 기본 정보 + 강의 스케줄.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        course_code:
+          type: string
+          title: 학수번호
+          maxLength: 20
+        name:
+          type: string
+          title: 과목명
+          maxLength: 200
+        section:
+          type: string
+          title: 분반
+          maxLength: 10
+        credits:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: 학점
+        schedules:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseSchedule'
+          readOnly: true
+      required:
+      - course_code
+      - credits
+      - id
+      - name
+      - schedules
+    ProfessorScheduleResponse:
+      type: object
+      properties:
+        professor:
+          $ref: '#/components/schemas/Professor'
+        semester:
+          $ref: '#/components/schemas/Semester'
+        courses:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfessorScheduleEntry'
+      required:
+      - courses
+      - professor
+      - semester
     Register:
       type: object
       properties:
@@ -1821,6 +2066,33 @@ components:
       - new_password_confirm
       - portal_password
       - student_id
+    ScheduleItem:
+      type: object
+      properties:
+        course_id:
+          type: integer
+        course_name:
+          type: string
+        professor:
+          type: string
+          nullable: true
+        day_of_week:
+          type: string
+        start_time:
+          type: string
+        end_time:
+          type: string
+        classroom:
+          type: string
+          nullable: true
+      required:
+      - classroom
+      - course_id
+      - course_name
+      - day_of_week
+      - end_time
+      - professor
+      - start_time
     Semester:
       type: object
       properties:
@@ -1845,6 +2117,120 @@ components:
       - term
       - term_display
       - year
+    SubjectReview:
+      type: object
+      description: 과목(course_code) 단위 후기 — 분반·교수 정보 포함.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        course:
+          type: integer
+          title: 과목
+        section:
+          type: string
+          readOnly: true
+        professor_name:
+          type: string
+          readOnly: true
+        author_name:
+          type: string
+          readOnly: true
+        semester_taken:
+          type: integer
+          nullable: true
+          title: 수강 학기
+        semester_taken_str:
+          type: string
+          readOnly: true
+        content:
+          type: string
+          title: 후기 내용
+        grade_score:
+          type: integer
+          maximum: 5
+          minimum: 1
+          title: 성적 점수
+        assignment_score:
+          type: integer
+          maximum: 5
+          minimum: 1
+          title: 과제 점수
+        exam_score:
+          type: integer
+          maximum: 5
+          minimum: 1
+          title: 시험 점수
+        is_anonymous:
+          type: boolean
+          title: 익명 여부
+        total_score:
+          type: number
+          format: double
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 작성일
+      required:
+      - assignment_score
+      - author_name
+      - content
+      - course
+      - created_at
+      - exam_score
+      - grade_score
+      - id
+      - professor_name
+      - section
+      - semester_taken_str
+      - total_score
+    SubjectReviewResponse:
+      type: object
+      properties:
+        course_code:
+          type: string
+        course_name:
+          type: string
+        review_count:
+          type: integer
+        stats:
+          $ref: '#/components/schemas/SubjectReviewStats'
+        reviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubjectReview'
+      required:
+      - course_code
+      - course_name
+      - review_count
+      - reviews
+      - stats
+    SubjectReviewStats:
+      type: object
+      properties:
+        avg_grade:
+          type: number
+          format: double
+          nullable: true
+        avg_assignment:
+          type: number
+          format: double
+          nullable: true
+        avg_exam:
+          type: number
+          format: double
+          nullable: true
+        avg_total:
+          type: number
+          format: double
+          nullable: true
+      required:
+      - avg_assignment
+      - avg_exam
+      - avg_grade
+      - avg_total
     TermEnum:
       enum:
       - '1'

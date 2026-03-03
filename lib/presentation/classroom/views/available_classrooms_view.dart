@@ -466,39 +466,47 @@ class _AvailableClassroomsViewState
           ),
         ),
         Expanded(
-          child: _loadingSchedule
-              ? const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : _classroomTimetableCourses.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.event_available_rounded, size: 48,
-                              color: AppColors.successHigh.withValues(alpha: 0.5)),
-                          const SizedBox(height: 14),
-                          Text('이 강의실에 배정된 수업이 없습니다',
-                              style: AppTextStyles.bodySmall),
-                          const SizedBox(height: 4),
-                          Text('강의실이 비어있을 가능성이 높습니다',
-                              style: AppTextStyles.caption
-                                  .copyWith(color: AppColors.textTertiary)),
-                        ],
-                      ),
-                    )
-                  : Column(
-                      children: [
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: TimetableGrid(
-                              courses: _classroomTimetableCourses,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1400),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: hPad),
+                child: _loadingSchedule
+                    ? const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : _classroomTimetableCourses.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.event_available_rounded, size: 48,
+                                    color: AppColors.successHigh.withValues(alpha: 0.5)),
+                                const SizedBox(height: 14),
+                                Text('이 강의실에 배정된 수업이 없습니다',
+                                    style: AppTextStyles.bodySmall),
+                                const SizedBox(height: 4),
+                                Text('강의실이 비어있을 가능성이 높습니다',
+                                    style: AppTextStyles.caption
+                                        .copyWith(color: AppColors.textTertiary)),
+                              ],
                             ),
+                          )
+                        : Column(
+                            children: [
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: TimetableGrid(
+                                    courses: _classroomTimetableCourses,
+                                  ),
+                                ),
+                              ),
+                              _buildCourseListBar(),
+                            ],
                           ),
-                        ),
-                        _buildCourseListBar(),
-                      ],
-                    ),
+              ),
+            ),
+          ),
         ),
       ],
     );

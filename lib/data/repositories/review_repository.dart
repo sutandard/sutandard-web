@@ -32,7 +32,7 @@ class ReviewRepositoryImpl implements ReviewRepository {
     int? page,
   }) async {
     final params = <String, dynamic>{};
-    if (course != null) params['course'] = course;
+    if (course != null) params['course_id'] = course;
     if (ordering != null) params['ordering'] = ordering;
     if (page != null) params['page'] = page;
 

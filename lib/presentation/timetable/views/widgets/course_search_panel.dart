@@ -9,9 +9,17 @@ import '../../viewmodels/course_search_viewmodel.dart';
 
 class CourseSearchPanel extends ConsumerStatefulWidget {
   final void Function(int courseId, String color)? onCourseAdd;
+  final void Function(CourseDetail course)? onCourseHoverEnter;
+  final VoidCallback? onCourseHoverExit;
   final String? initialQuery;
 
-  const CourseSearchPanel({super.key, this.onCourseAdd, this.initialQuery});
+  const CourseSearchPanel({
+    super.key,
+    this.onCourseAdd,
+    this.onCourseHoverEnter,
+    this.onCourseHoverExit,
+    this.initialQuery,
+  });
 
   @override
   ConsumerState<CourseSearchPanel> createState() => _CourseSearchPanelState();
@@ -428,6 +436,8 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
               vm.selectCourseForInfo(course);
               _tabController.animateTo(1);
             },
+            onSectionHoverEnter: widget.onCourseHoverEnter,
+            onSectionHoverExit: widget.onCourseHoverExit,
           ),
         );
       },
@@ -692,7 +702,7 @@ class _ReviewCard extends StatelessWidget {
           const SizedBox(height: 6),
           Row(
             children: [
-              Text(review.authorId,
+              Text(review.authorName,
                   style: AppTextStyles.caption
                       .copyWith(color: AppColors.textTertiary, fontSize: 11)),
               if (review.semesterTakenStr.isNotEmpty) ...[
@@ -742,6 +752,8 @@ class _SubjectCard extends StatelessWidget {
   final VoidCallback onToggle;
   final void Function(int courseId)? onSectionAdd;
   final void Function(CourseDetail course) onSectionTap;
+  final void Function(CourseDetail course)? onSectionHoverEnter;
+  final VoidCallback? onSectionHoverExit;
 
   const _SubjectCard({
     required this.subject,
@@ -751,6 +763,8 @@ class _SubjectCard extends StatelessWidget {
     required this.onToggle,
     this.onSectionAdd,
     required this.onSectionTap,
+    this.onSectionHoverEnter,
+    this.onSectionHoverExit,
   });
 
   @override
@@ -907,6 +921,10 @@ class _SubjectCard extends StatelessWidget {
                     ? () => onSectionAdd!(section.id)
                     : null,
                 onTap: () => onSectionTap(section),
+                onHoverEnter: onSectionHoverEnter != null
+                    ? () => onSectionHoverEnter!(section)
+                    : null,
+                onHoverExit: onSectionHoverExit,
               )),
           const SizedBox(height: 6),
         ],
@@ -919,11 +937,15 @@ class _SectionRow extends StatelessWidget {
   final CourseDetail section;
   final VoidCallback? onAdd;
   final VoidCallback onTap;
+  final VoidCallback? onHoverEnter;
+  final VoidCallback? onHoverExit;
 
   const _SectionRow({
     required this.section,
     this.onAdd,
     required this.onTap,
+    this.onHoverEnter,
+    this.onHoverExit,
   });
 
   @override
@@ -937,7 +959,10 @@ class _SectionRow extends StatelessWidget {
                 .join(', ')
             : '시간 미정';
 
-    return InkWell(
+    return MouseRegion(
+      onEnter: onHoverEnter != null ? (_) => onHoverEnter!() : null,
+      onExit: onHoverExit != null ? (_) => onHoverExit!() : null,
+      child: InkWell(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
@@ -997,6 +1022,17 @@ class _SectionRow extends StatelessWidget {
                       ],
                     ],
                   ),
+                  if (section.departmentName.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(section.departmentName,
+                        style: AppTextStyles.caption.copyWith(
+                          fontSize: 11,
+                          color: AppColors.primary.withValues(alpha: 0.7),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                  ],
                   const SizedBox(height: 2),
                   Text(scheduleText,
                       style: AppTextStyles.caption.copyWith(
@@ -1027,6 +1063,7 @@ class _SectionRow extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

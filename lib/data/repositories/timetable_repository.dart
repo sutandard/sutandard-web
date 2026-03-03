@@ -11,8 +11,8 @@ abstract class TimetableRepository {
   Future<void> deleteTimetable(int id);
   Future<TimetableCourse> addCourse(int timetableId, AddCourseRequest request);
   Future<TimetableCourse> updateCourse(
-      int timetableId, int timetableCourseId, {String? color});
-  Future<void> removeCourse(int timetableId, int timetableCourseId);
+      int timetableId, int courseId, {String? color});
+  Future<void> removeCourse(int timetableId, int courseId);
   Future<Map<String, dynamic>?> getCurrentClass();
 }
 
@@ -83,20 +83,20 @@ class TimetableRepositoryImpl implements TimetableRepository {
 
   @override
   Future<TimetableCourse> updateCourse(
-      int timetableId, int timetableCourseId, {String? color}) async {
+      int timetableId, int courseId, {String? color}) async {
     final data = <String, dynamic>{};
     if (color != null) data['color'] = color;
     final response = await _client.patch(
-      ApiConstants.timetableCourseDetail(timetableId, timetableCourseId),
+      ApiConstants.timetableCourseDetail(timetableId, courseId),
       data: data,
     );
     return TimetableCourse.fromJson(response.data as Map<String, dynamic>);
   }
 
   @override
-  Future<void> removeCourse(int timetableId, int timetableCourseId) async {
+  Future<void> removeCourse(int timetableId, int courseId) async {
     await _client.delete(
-      ApiConstants.timetableCourseDetail(timetableId, timetableCourseId),
+      ApiConstants.timetableCourseDetail(timetableId, courseId),
     );
   }
 

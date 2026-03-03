@@ -705,7 +705,7 @@ class _ReviewCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                review.authorId,
+                review.authorName,
                 style: AppTextStyles.caption
                     .copyWith(color: AppColors.textTertiary, fontSize: 11),
               ),

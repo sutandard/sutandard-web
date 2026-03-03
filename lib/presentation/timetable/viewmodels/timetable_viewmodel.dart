@@ -104,8 +104,8 @@ class TimetableViewModel extends Notifier<TimetableState> {
         timetable: newTt,
         allTimetables: [newTt],
       );
-    } catch (_) {
-      state = const TimetableState();
+    } catch (e) {
+      state = TimetableState(error: '시간표 자동 생성에 실패했습니다. 아래에서 직접 만들어주세요.');
     }
   }
 
@@ -169,14 +169,14 @@ class TimetableViewModel extends Notifier<TimetableState> {
     }
   }
 
-  Future<void> removeCourse(int timetableCourseId) async {
+  Future<void> removeCourse(int courseId) async {
     final timetable = state.timetable;
     if (timetable == null) return;
 
     try {
-      await _repository.removeCourse(timetable.id, timetableCourseId);
+      await _repository.removeCourse(timetable.id, courseId);
       final updatedCourses =
-          timetable.courses.where((c) => c.id != timetableCourseId).toList();
+          timetable.courses.where((c) => c.course != courseId).toList();
       final updated = Timetable(
         id: timetable.id,
         semester: timetable.semester,
@@ -219,18 +219,18 @@ class TimetableViewModel extends Notifier<TimetableState> {
     }
   }
 
-  Future<void> updateCourseColor(int timetableCourseId, String color) async {
+  Future<void> updateCourseColor(int courseId, String color) async {
     final timetable = state.timetable;
     if (timetable == null) return;
 
     try {
       final updated = await _repository.updateCourse(
         timetable.id,
-        timetableCourseId,
+        courseId,
         color: color,
       );
       final updatedCourses = timetable.courses.map((c) {
-        if (c.id == timetableCourseId) return updated;
+        if (c.course == courseId) return updated;
         return c;
       }).toList();
       state = state.copyWith(

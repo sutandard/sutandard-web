@@ -126,6 +126,7 @@ class _ReviewViewState extends ConsumerState<ReviewView> {
         gradeScore: _gradeScore,
         assignmentScore: _assignmentScore,
         examScore: _examScore,
+        isAnonymous: _isAnonymous,
       ));
       if (mounted) {
         showAppSnackBar(context,
@@ -883,7 +884,7 @@ class _ReviewCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                review.authorId,
+                review.authorName,
                 style: AppTextStyles.caption
                     .copyWith(color: AppColors.textTertiary, fontSize: 11),
               ),

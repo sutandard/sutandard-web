@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../data/models/course_model.dart';
 import '../../../data/models/timetable_model.dart';
 import '../../../data/repositories/course_repository.dart';
@@ -19,8 +20,10 @@ class WizardView extends ConsumerStatefulWidget {
   ConsumerState<WizardView> createState() => _WizardViewState();
 }
 
-class _WizardViewState extends ConsumerState<WizardView> {
+class _WizardViewState extends ConsumerState<WizardView>
+    with SingleTickerProviderStateMixin {
   final _searchController = TextEditingController();
+  late final TabController _mobileTabController;
   final List<WizardCourseGroup> _courseGroups = [];
   List<List<CourseDetail>> _generatedCombinations = [];
   int _currentComboIndex = 0;
@@ -34,8 +37,15 @@ class _WizardViewState extends ConsumerState<WizardView> {
   int? _maxDays;
 
   @override
+  void initState() {
+    super.initState();
+    _mobileTabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
+    _mobileTabController.dispose();
     super.dispose();
   }
 
@@ -114,13 +124,17 @@ class _WizardViewState extends ConsumerState<WizardView> {
 
       final combos = _findValidCombinations(detailedGroups);
 
+      if (!mounted) return;
       setState(() {
         _generatedCombinations = combos;
         _currentComboIndex = 0;
         _isGenerating = false;
       });
+      if (combos.isNotEmpty && !Responsive(context).isDesktop) {
+        _mobileTabController.animateTo(1);
+      }
     } catch (_) {
-      setState(() => _isGenerating = false);
+      if (mounted) setState(() => _isGenerating = false);
     }
   }
 
@@ -200,6 +214,7 @@ class _WizardViewState extends ConsumerState<WizardView> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
+    final responsive = Responsive(context);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -216,13 +231,34 @@ class _WizardViewState extends ConsumerState<WizardView> {
           ),
           Container(height: 1, color: AppColors.border),
           Expanded(
-            child: Row(
-              children: [
-                Expanded(flex: 40, child: _buildLeftPanel()),
-                Container(width: 1, color: AppColors.border),
-                Expanded(flex: 60, child: _buildRightPanel()),
-              ],
-            ),
+            child: responsive.isDesktop
+                ? Row(
+                    children: [
+                      Expanded(flex: 40, child: _buildLeftPanel()),
+                      Container(width: 1, color: AppColors.border),
+                      Expanded(flex: 60, child: _buildRightPanel()),
+                    ],
+                  )
+                : Column(
+                    children: [
+                      TabBar(
+                        controller: _mobileTabController,
+                        tabs: const [
+                          Tab(text: '과목 선택'),
+                          Tab(text: '미리보기'),
+                        ],
+                      ),
+                      Expanded(
+                        child: TabBarView(
+                          controller: _mobileTabController,
+                          children: [
+                            _buildLeftPanel(),
+                            _buildRightPanel(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ],
       ),

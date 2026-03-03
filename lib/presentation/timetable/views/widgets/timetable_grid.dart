@@ -9,6 +9,7 @@ import 'lecture_card.dart';
 
 class TimetableGrid extends StatelessWidget {
   final List<TimetableCourse> courses;
+  final List<TimetableCourse>? previewCourses;
   final void Function(TimetableCourse course, CourseSchedule schedule)?
       onCourseTap;
   final void Function(TimetableCourse course)? onCourseLongPress;
@@ -16,6 +17,7 @@ class TimetableGrid extends StatelessWidget {
   const TimetableGrid({
     super.key,
     required this.courses,
+    this.previewCourses,
     this.onCourseTap,
     this.onCourseLongPress,
   });
@@ -64,6 +66,12 @@ class TimetableGrid extends StatelessWidget {
                                   periodHeight: periodHeight,
                                   totalWidth: constraints.maxWidth,
                                 ),
+                                if (previewCourses != null && previewCourses!.isNotEmpty)
+                                  ..._buildCourseCards(
+                                    periodHeight: periodHeight,
+                                    totalWidth: constraints.maxWidth,
+                                    isPreview: true,
+                                  ),
                               ],
                             );
                           },
@@ -83,13 +91,18 @@ class TimetableGrid extends StatelessWidget {
   List<Widget> _buildCourseCards({
     required double periodHeight,
     required double totalWidth,
+    bool isPreview = false,
   }) {
     final dayCount = AppConstants.timetableDays.length;
     final columnWidth = totalWidth / dayCount;
+    final totalHours =
+        AppConstants.timetableEndHour - AppConstants.timetableStartHour;
+    final gridHeight = totalHours * periodHeight;
 
     // Build a list of all schedule entries with their course reference
     final entries = <_ScheduleEntry>[];
-    for (final course in courses) {
+    final coursesToRender = isPreview ? (previewCourses ?? []) : courses;
+    for (final course in coursesToRender) {
       for (final schedule in course.schedules) {
         if (schedule.dayIndex < 0 || schedule.dayIndex >= dayCount) continue;
         entries.add(_ScheduleEntry(course: course, schedule: schedule));
@@ -125,32 +138,67 @@ class TimetableGrid extends StatelessWidget {
                 periodHeight;
         final height = entry.schedule.durationInMinutes / 60 * periodHeight;
 
+        // Clamp cards that extend outside the grid area
+        if (topOffset + height <= 0 || topOffset >= gridHeight) continue;
+        final clampedTop = topOffset.clamp(0.0, gridHeight - 4.0);
+        final clampedHeight = (height - (clampedTop - topOffset)).clamp(4.0, gridHeight - clampedTop);
+
         final slotWidth = columnWidth / col.total;
         final left = dayIndex * columnWidth + col.index * slotWidth;
 
         widgets.add(
           Positioned(
             left: left,
-            top: topOffset,
+            top: clampedTop,
             width: slotWidth,
-            height: height,
-            child: LectureCard(
-              course: entry.course,
-              schedule: entry.schedule,
-              isOverlapping: col.total > 1,
-              onTap: onCourseTap != null
-                  ? () => onCourseTap!(entry.course, entry.schedule)
-                  : null,
-              onLongPress: onCourseLongPress != null
-                  ? () => onCourseLongPress!(entry.course)
-                  : null,
-            ),
+            height: clampedHeight,
+            child: isPreview
+                ? _buildPreviewCard(entry.course, entry.schedule)
+                : LectureCard(
+                    course: entry.course,
+                    schedule: entry.schedule,
+                    isOverlapping: col.total > 1,
+                    onTap: onCourseTap != null
+                        ? () => onCourseTap!(entry.course, entry.schedule)
+                        : null,
+                    onLongPress: onCourseLongPress != null
+                        ? () => onCourseLongPress!(entry.course)
+                        : null,
+                  ),
           ),
         );
       }
     }
 
     return widgets;
+  }
+
+  Widget _buildPreviewCard(TimetableCourse course, CourseSchedule schedule) {
+    return IgnorePointer(
+      child: Container(
+        margin: const EdgeInsets.all(1),
+        decoration: BoxDecoration(
+          color: course.colorValue.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: course.colorValue.withValues(alpha: 0.4),
+            width: 1,
+            strokeAlign: BorderSide.strokeAlignInside,
+          ),
+        ),
+        padding: const EdgeInsets.all(4),
+        child: Text(
+          course.name,
+          style: AppTextStyles.caption.copyWith(
+            fontSize: 10,
+            color: course.colorValue.withValues(alpha: 0.7),
+            fontWeight: FontWeight.w600,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
   }
 
   /// Assigns column index and total columns for overlapping schedule entries.
