@@ -231,13 +231,29 @@ class CourseSearchViewModel extends Notifier<CourseSearchState> {
       loadingSections: true,
     );
 
+    // Find semester label for display
+    final semesterStr = state.semesters
+        .where((s) => s.id == state.selectedSemesterId)
+        .firstOrNull
+        ?.label;
+
     try {
       final detail = await _repo.getSubjectDetail(
         subject.courseCode,
         semester: state.selectedSemesterId,
       );
+      // Convert CourseSection → CourseDetail for UI compatibility
+      final sections = detail.sections
+          .map((s) => s.toCourseDetail(
+                courseCode: detail.courseCode,
+                name: detail.name,
+                credits: detail.credits,
+                semesterId: state.selectedSemesterId,
+                semesterStr: semesterStr,
+              ))
+          .toList();
       state = state.copyWith(
-        expandedSections: detail.sections,
+        expandedSections: sections,
         loadingSections: false,
       );
     } catch (_) {

@@ -85,8 +85,9 @@ class _ReviewFormWidgetState extends ConsumerState<ReviewFormWidget> {
           TextField(
             controller: _contentController,
             maxLines: 4,
+            maxLength: 500,
             decoration: InputDecoration(
-              hintText: '강의에 대한 솔직한 후기를 남겨주세요.',
+              hintText: '강의에 대한 솔직한 후기를 남겨주세요. (20~500자)',
               hintStyle: AppTextStyles.bodySmall
                   .copyWith(color: AppColors.textTertiary),
               filled: true,

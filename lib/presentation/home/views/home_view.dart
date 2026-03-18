@@ -629,7 +629,7 @@ class _CurrentLectureCard extends ConsumerWidget {
             'name': course.name,
             'time':
                 '${schedule.startTimeFormatted} ~ ${schedule.endTimeFormatted}',
-            'room': schedule.classroomStr,
+            'room': schedule.classroomStr ?? '',
           };
         } else if (nowMinutes < start) {
           if (nextLecture == null ||
@@ -638,7 +638,7 @@ class _CurrentLectureCard extends ConsumerWidget {
               'name': course.name,
               'time':
                   '${schedule.startTimeFormatted} ~ ${schedule.endTimeFormatted}',
-              'room': schedule.classroomStr,
+              'room': schedule.classroomStr ?? '',
               '_start': '$start',
             };
           }
@@ -911,7 +911,16 @@ class _ReviewCard extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     child: Container(height: 1, color: AppColors.divider),
                   ),
-                  itemBuilder: (_, i) => _ReviewItem(enriched: reviews[i]),
+                  itemBuilder: (_, i) => GestureDetector(
+                    onTap: () {
+                      final courseName = reviews[i].courseName;
+                      if (courseName.isNotEmpty) {
+                        context.go('/courses?q=${Uri.encodeComponent(courseName)}');
+                      }
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: _ReviewItem(enriched: reviews[i]),
+                  ),
                 );
               },
             ),
@@ -1060,7 +1069,7 @@ class _QuickAccessCards extends StatelessWidget {
                     _QuickCard(
                       title: '빈 강의실',
                       subtitle: '지금 비어있는 강의실 찾기',
-                      icon: Icons.meeting_room_outlined,
+                      icon: Icons.door_back_door_outlined,
                       onTap: () => context.go('/classrooms'),
                     ),
                     const SizedBox(height: 12),
@@ -1074,7 +1083,7 @@ class _QuickAccessCards extends StatelessWidget {
                     _QuickCard(
                       title: '오늘의 학식',
                       subtitle: '학생식당 메뉴 보기',
-                      icon: Icons.restaurant_outlined,
+                      icon: Icons.restaurant_menu_rounded,
                       onTap: () => _showComingSoon(context),
                     ),
                   ],
@@ -1085,7 +1094,7 @@ class _QuickAccessCards extends StatelessWidget {
                       child: _QuickCard(
                         title: '빈 강의실',
                         subtitle: '지금 비어있는 강의실 찾기',
-                        icon: Icons.meeting_room_outlined,
+                        icon: Icons.door_back_door_outlined,
                         onTap: () => context.go('/classrooms'),
                       ),
                     ),
@@ -1103,7 +1112,7 @@ class _QuickAccessCards extends StatelessWidget {
                       child: _QuickCard(
                         title: '오늘의 학식',
                         subtitle: '학생식당 메뉴 보기',
-                        icon: Icons.restaurant_outlined,
+                        icon: Icons.restaurant_menu_rounded,
                         onTap: () => _showComingSoon(context),
                       ),
                     ),

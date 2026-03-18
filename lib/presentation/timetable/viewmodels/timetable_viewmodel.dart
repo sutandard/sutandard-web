@@ -6,6 +6,7 @@ import '../../../data/models/course_model.dart';
 import '../../../data/models/timetable_model.dart';
 import '../../../data/repositories/course_repository.dart';
 import '../../../data/repositories/timetable_repository.dart';
+import '../../auth/viewmodels/auth_viewmodel.dart';
 
 class TimetableState {
   final Timetable? timetable;
@@ -42,8 +43,21 @@ class TimetableState {
 }
 
 class TimetableViewModel extends Notifier<TimetableState> {
+  bool _isLoadingInProgress = false;
+
   @override
   TimetableState build() {
+    // auth 상태를 watch하여 로그인/로그아웃 시 자동으로 build()가 재실행됨
+    final authState = ref.watch(authViewModelProvider);
+
+    if (!authState.isAuthenticated) {
+      // 비로그인 상태: 빈 상태 반환 (로딩 없음)
+      return const TimetableState();
+    }
+
+    // 로그인 상태: 동기적으로 isLoading: true를 반환하여
+    // UI가 "시간표 만들기" 가이드를 보여주지 않도록 함
+    _isLoadingInProgress = false; // auth 변경 시 재로드 허용
     _loadTimetables();
     return const TimetableState(isLoading: true);
   }
@@ -55,6 +69,8 @@ class TimetableViewModel extends Notifier<TimetableState> {
       ref.read(courseRepositoryProvider);
 
   Future<void> _loadTimetables() async {
+    if (_isLoadingInProgress) return;
+    _isLoadingInProgress = true;
     try {
       final timetables = await _repository.getTimetables();
 
@@ -80,6 +96,8 @@ class TimetableViewModel extends Notifier<TimetableState> {
         }
       }
       state = TimetableState(error: extractErrorMessage(e));
+    } finally {
+      _isLoadingInProgress = false;
     }
   }
 

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/filter_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../data/models/course_model.dart';
 import '../../../../data/models/review_model.dart';
+import '../../../auth/viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/course_search_viewmodel.dart';
 
 class CourseSearchPanel extends ConsumerStatefulWidget {
@@ -522,6 +524,8 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
                 _infoLine('학기', course.semesterStr),
               if (course.isElearning)
                 _infoLine('수업방식', '사이버강의 (이러닝)'),
+              if (course.gradeEvalTypeDisplay.isNotEmpty)
+                _infoLine('성적처리', course.gradeEvalTypeDisplay),
               if (course.schedules.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text('시간표', style: AppTextStyles.captionBold),
@@ -529,7 +533,7 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
                 ...course.schedules.map((s) => Padding(
                       padding: const EdgeInsets.only(bottom: 2),
                       child: Text(
-                        '${s.dayDisplay} ${s.startTimeFormatted}~${s.endTimeFormatted}  ${s.classroomStr}',
+                        '${s.dayDisplay} ${s.startTimeFormatted}~${s.endTimeFormatted}  ${s.classroomStr ?? ''}',
                         style: AppTextStyles.caption.copyWith(fontSize: 12),
                       ),
                     )),
@@ -568,6 +572,44 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
                 ],
               ),
               const SizedBox(height: 10),
+              Builder(builder: (context) {
+                final authState = ref.watch(authViewModelProvider);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonal(
+                      onPressed: () {
+                        if (!authState.isAuthenticated) {
+                          context.go('/login');
+                        } else {
+                          context.go('/courses');
+                        }
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                        foregroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.edit_outlined, size: 14),
+                          const SizedBox(width: 6),
+                          Text(
+                            authState.isAuthenticated ? '후기 작성하기' : '로그인 후 작성',
+                            style: AppTextStyles.captionBold.copyWith(
+                              color: AppColors.primary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
               if (reviews.isEmpty)
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -612,8 +654,8 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
   }
 
   Widget _buildReviewStats(Map<String, dynamic> stats) {
-    final avg = (stats['average_total_score'] as num?)?.toDouble();
-    final count = stats['review_count'] as int? ?? 0;
+    final avg = (stats['avg_total'] as num?)?.toDouble();
+    final count = stats['count'] as int? ?? 0;
 
     if (count == 0 && avg == null) return const SizedBox.shrink();
 
@@ -829,9 +871,9 @@ class _SubjectCard extends StatelessWidget {
                           '${subject.yearLevel != null ? '  ·  ${subject.yearLevel}학년' : ''}',
                           style: AppTextStyles.bodySmall.copyWith(fontSize: 12),
                         ),
-                        if (subject.departmentName.isNotEmpty) ...[
+                        if (subject.offeringDepartment.isNotEmpty) ...[
                           const SizedBox(height: 2),
-                          Text(subject.departmentName,
+                          Text(subject.offeringDepartment,
                               style: AppTextStyles.caption
                                   .copyWith(color: AppColors.textTertiary)),
                         ],
@@ -955,7 +997,7 @@ class _SectionRow extends StatelessWidget {
         : section.schedules.isNotEmpty
             ? section.schedules
                 .map((s) =>
-                    '${s.dayDisplay} ${s.startTimeFormatted}~${s.endTimeFormatted} (${s.classroomStr})')
+                    '${s.dayDisplay} ${s.startTimeFormatted}~${s.endTimeFormatted} (${s.classroomStr ?? ''})')
                 .join(', ')
             : '시간 미정';
 
@@ -1015,6 +1057,27 @@ class _SectionRow extends StatelessWidget {
                           child: Text('이러닝',
                               style: AppTextStyles.caption.copyWith(
                                 color: AppColors.accent,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                              )),
+                        ),
+                      ],
+                      if (section.gradeEvalTypeDisplay.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: section.gradeEvalTypeDisplay == 'P/F'
+                                ? AppColors.warning.withValues(alpha: 0.1)
+                                : AppColors.textTertiary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(section.gradeEvalTypeDisplay,
+                              style: AppTextStyles.caption.copyWith(
+                                color: section.gradeEvalTypeDisplay == 'P/F'
+                                    ? AppColors.warning
+                                    : AppColors.textSecondary,
                                 fontSize: 9,
                                 fontWeight: FontWeight.w600,
                               )),

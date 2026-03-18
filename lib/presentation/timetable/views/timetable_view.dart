@@ -93,12 +93,8 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
     final authState = ref.watch(authViewModelProvider);
     final responsive = Responsive(context);
 
-    // 로그인 후 시간표 자동 새로고침
-    ref.listen<AuthState>(authViewModelProvider, (prev, next) {
-      if (prev != null && !prev.isAuthenticated && next.isAuthenticated) {
-        ref.read(timetableViewModelProvider.notifier).refresh();
-      }
-    });
+    // auth 상태 변경은 TimetableViewModel.build()에서 ref.watch로 처리됨
+    // → 별도 ref.listen 불필요
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -791,100 +787,111 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
       BuildContext context, TimetableState state, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text('시간표 후보 목록', style: AppTextStyles.heading3),
-              ),
-              const SizedBox(height: 12),
-              ...state.allTimetables.map((tt) {
-                final isSelected = tt.id == state.timetable?.id;
-                return ListTile(
-                  leading: Icon(
-                    isSelected
-                        ? Icons.radio_button_checked_rounded
-                        : Icons.radio_button_off_rounded,
-                    color: isSelected ? AppColors.primary : AppColors.textTertiary,
-                    size: 22,
-                  ),
-                  title: Text(
-                    tt.name.isNotEmpty ? tt.name : '시간표 ${tt.id}',
-                    style: AppTextStyles.body.copyWith(
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.textPrimary,
+      isScrollControlled: true,
+      builder: (ctx) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.65,
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  subtitle: Text(
-                    '${tt.semesterStr} · ${tt.totalCredits}학점 · ${tt.courses.length}과목',
-                    style: AppTextStyles.bodySmall.copyWith(fontSize: 12),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      GestureDetector(
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text('시간표 후보 목록', style: AppTextStyles.heading3),
+                ),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: state.allTimetables.map((tt) {
+                      final isSelected = tt.id == state.timetable?.id;
+                      return ListTile(
+                        leading: Icon(
+                          isSelected
+                              ? Icons.radio_button_checked_rounded
+                              : Icons.radio_button_off_rounded,
+                          color: isSelected ? AppColors.primary : AppColors.textTertiary,
+                          size: 22,
+                        ),
+                        title: Text(
+                          tt.name.isNotEmpty ? tt.name : '시간표 ${tt.id}',
+                          style: AppTextStyles.body.copyWith(
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        subtitle: Text(
+                          '${tt.semesterStr} · ${tt.totalCredits}학점 · ${tt.courses.length}과목',
+                          style: AppTextStyles.bodySmall.copyWith(fontSize: 12),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                ref
+                                    .read(timetableViewModelProvider.notifier)
+                                    .setMainTimetable(tt.id);
+                              },
+                              child: Tooltip(
+                                message: tt.isMain ? '대표 시간표' : '대표로 지정',
+                                child: Icon(
+                                  tt.isMain
+                                      ? Icons.star_rounded
+                                      : Icons.star_outline_rounded,
+                                  color: tt.isMain
+                                      ? AppColors.warning
+                                      : AppColors.textTertiary,
+                                  size: 22,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                         onTap: () {
                           ref
                               .read(timetableViewModelProvider.notifier)
-                              .setMainTimetable(tt.id);
+                              .selectTimetable(tt.id);
+                          Navigator.pop(ctx);
                         },
-                        child: Tooltip(
-                          message: tt.isMain ? '대표 시간표' : '대표로 지정',
-                          child: Icon(
-                            tt.isMain
-                                ? Icons.star_rounded
-                                : Icons.star_outline_rounded,
-                            color: tt.isMain
-                                ? AppColors.warning
-                                : AppColors.textTertiary,
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                    ],
+                      );
+                    }).toList(),
                   ),
-                  onTap: () {
-                    ref
-                        .read(timetableViewModelProvider.notifier)
-                        .selectTimetable(tt.id);
-                    Navigator.pop(ctx);
-                  },
-                );
-              }),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: SutandardButton(
-                  label: '+ 새 시간표 후보',
-                  variant: SutandardButtonVariant.secondary,
-                  height: 42,
-                  fontSize: 14,
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _showCreateTimetableDialog(context, ref, state);
-                  },
                 ),
-              ),
-              const SizedBox(height: 12),
-            ],
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SutandardButton(
+                    label: '+ 새 시간표 후보',
+                    variant: SutandardButtonVariant.secondary,
+                    height: 42,
+                    fontSize: 14,
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _showCreateTimetableDialog(context, ref, state);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
         ),
       ),
@@ -1396,8 +1403,8 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
         buf.writeln('SUMMARY:${_icsEscape(course.name)}');
         buf.writeln(
             'DESCRIPTION:${_icsEscape(course.professorName)} · ${course.credits}학점');
-        if (schedule.classroomStr.isNotEmpty) {
-          buf.writeln('LOCATION:${_icsEscape(schedule.classroomStr)}');
+        if (schedule.classroomStr != null && schedule.classroomStr!.isNotEmpty) {
+          buf.writeln('LOCATION:${_icsEscape(schedule.classroomStr!)}');
         }
         buf.writeln('END:VEVENT');
       }
@@ -1470,7 +1477,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                 _detailRow(Icons.person_outline, course.professorName),
                 _detailRow(
                     Icons.tag_rounded, course.courseDetail?.courseCode ?? ''),
-                _detailRow(Icons.room_outlined, schedule.classroomStr),
+                _detailRow(Icons.room_outlined, schedule.classroomStr ?? ''),
                 _detailRow(
                   Icons.access_time_outlined,
                   '${schedule.startTimeFormatted} - ${schedule.endTimeFormatted}',

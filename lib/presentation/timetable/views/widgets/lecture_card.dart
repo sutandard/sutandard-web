@@ -57,7 +57,7 @@ class LectureCard extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              schedule.classroomStr,
+              schedule.classroomStr ?? '',
               style: AppTextStyles.timetableSublabel
                   .copyWith(color: fgColor.withValues(alpha: 0.7)),
               maxLines: 1,

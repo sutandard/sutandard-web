@@ -23,7 +23,10 @@ class TimetableRepositoryImpl implements TimetableRepository {
 
   @override
   Future<List<Timetable>> getTimetables() async {
-    final response = await _client.get(ApiConstants.timetables);
+    final response = await _client.get(
+      ApiConstants.timetables,
+      queryParameters: {'page_size': 100},
+    );
     final data = response.data;
     if (data is List) {
       return data

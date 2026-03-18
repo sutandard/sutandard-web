@@ -5,7 +5,7 @@ class CourseSchedule {
   final String startTime;
   final String endTime;
   final int? classroom;
-  final String classroomStr;
+  final String? classroomStr;
 
   const CourseSchedule({
     required this.id,
@@ -14,7 +14,7 @@ class CourseSchedule {
     required this.startTime,
     required this.endTime,
     this.classroom,
-    required this.classroomStr,
+    this.classroomStr,
   });
 
   int get dayIndex => switch (dayOfWeek) {
@@ -50,7 +50,7 @@ class CourseSchedule {
       startTime: json['start_time'] as String,
       endTime: json['end_time'] as String,
       classroom: json['classroom'] as int?,
-      classroomStr: json['classroom_str'] as String,
+      classroomStr: json['classroom_str'] as String?,
     );
   }
 }
@@ -71,6 +71,7 @@ class CourseList {
   final bool isElearning;
   final int? department;
   final String departmentName;
+  final String gradeEvalType;
 
   const CourseList({
     required this.id,
@@ -88,7 +89,18 @@ class CourseList {
     this.isElearning = false,
     this.department,
     this.departmentName = '',
+    this.gradeEvalType = '',
   });
+
+  String get gradeEvalTypeDisplay {
+    if (gradeEvalType.isEmpty) return '';
+    return switch (gradeEvalType) {
+      '절대' || 'ABSOLUTE' => '절대평가',
+      '상대' || 'RELATIVE' => '상대평가',
+      'P/F' || 'PF' => 'P/F',
+      _ => gradeEvalType,
+    };
+  }
 
   factory CourseList.fromJson(Map<String, dynamic> json) {
     return CourseList(
@@ -107,6 +119,7 @@ class CourseList {
       isElearning: json['is_elearning'] as bool? ?? false,
       department: json['department'] as int?,
       departmentName: json['department_name'] as String? ?? '',
+      gradeEvalType: json['grade_eval_type'] as String? ?? '',
     );
   }
 }
@@ -132,6 +145,7 @@ class CourseDetail extends CourseList {
     super.isElearning,
     super.department,
     super.departmentName,
+    super.gradeEvalType,
     required this.schedules,
     this.reviewStats,
     this.siblingSections,
@@ -154,6 +168,7 @@ class CourseDetail extends CourseList {
       isElearning: json['is_elearning'] as bool? ?? false,
       department: json['department'] as int?,
       departmentName: json['department_name'] as String? ?? '',
+      gradeEvalType: json['grade_eval_type'] as String? ?? '',
       schedules: (json['schedules'] as List<dynamic>)
           .map((e) => CourseSchedule.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -218,10 +233,12 @@ class Subject {
   final String courseType;
   final String courseTypeDisplay;
   final int? yearLevel;
-  final String departmentName;
+  final String offeringDepartment;
+  final String college;
+  final int theoryHours;
+  final int practiceHours;
   final int sectionCount;
-  final int? semester;
-  final String? semesterStr;
+  final int elearningCount;
 
   const Subject({
     required this.courseCode,
@@ -230,10 +247,12 @@ class Subject {
     required this.courseType,
     required this.courseTypeDisplay,
     this.yearLevel,
-    this.departmentName = '',
+    this.offeringDepartment = '',
+    this.college = '',
+    this.theoryHours = 0,
+    this.practiceHours = 0,
     required this.sectionCount,
-    this.semester,
-    this.semesterStr,
+    this.elearningCount = 0,
   });
 
   factory Subject.fromJson(Map<String, dynamic> json) {
@@ -244,10 +263,122 @@ class Subject {
       courseType: json['course_type'] as String? ?? '',
       courseTypeDisplay: json['course_type_display'] as String? ?? '',
       yearLevel: json['year_level'] as int?,
-      departmentName: json['department_name'] as String? ?? '',
+      offeringDepartment: json['offering_department'] as String? ?? '',
+      college: json['college'] as String? ?? '',
+      theoryHours: json['theory_hours'] as int? ?? 0,
+      practiceHours: json['practice_hours'] as int? ?? 0,
       sectionCount: json['section_count'] as int? ?? 1,
-      semester: json['semester'] as int?,
-      semesterStr: json['semester_str'] as String?,
+      elearningCount: json['elearning_count'] as int? ?? 0,
+    );
+  }
+}
+
+class CourseSection {
+  final int id;
+  final String section;
+  final String sectionType;
+  final String dayNight;
+  final String gradeEvalType;
+  final bool isElearning;
+  final bool isReadingCert;
+  final String combinedClassNo;
+  final int? yearLevel;
+  final String courseType;
+  final String courseTypeDisplay;
+  final String offeringDepartment;
+  final String college;
+  final Map<String, dynamic>? professor;
+  final List<CourseSchedule> schedules;
+
+  const CourseSection({
+    required this.id,
+    required this.section,
+    this.sectionType = '',
+    this.dayNight = '',
+    this.gradeEvalType = '',
+    this.isElearning = false,
+    this.isReadingCert = false,
+    this.combinedClassNo = '',
+    this.yearLevel,
+    this.courseType = '',
+    this.courseTypeDisplay = '',
+    this.offeringDepartment = '',
+    this.college = '',
+    this.professor,
+    this.schedules = const [],
+  });
+
+  String get professorName =>
+      professor != null ? (professor!['name'] as String? ?? '') : '';
+  int? get professorId =>
+      professor != null ? (professor!['id'] as int?) : null;
+  String get professorDepartment =>
+      professor != null ? (professor!['department'] as String? ?? '') : '';
+
+  /// 성적처리 표시
+  String get gradeEvalTypeDisplay {
+    if (gradeEvalType.isEmpty) return '';
+    return switch (gradeEvalType) {
+      '절대' || 'ABSOLUTE' => '절대평가',
+      '상대' || 'RELATIVE' => '상대평가',
+      'P/F' || 'PF' => 'P/F',
+      _ => gradeEvalType,
+    };
+  }
+
+  factory CourseSection.fromJson(Map<String, dynamic> json) {
+    return CourseSection(
+      id: json['id'] as int,
+      section: json['section'] as String? ?? '',
+      sectionType: json['section_type'] as String? ?? '',
+      dayNight: json['day_night'] as String? ?? '',
+      gradeEvalType: json['grade_eval_type'] as String? ?? '',
+      isElearning: json['is_elearning'] as bool? ?? false,
+      isReadingCert: json['is_reading_cert'] as bool? ?? false,
+      combinedClassNo: json['combined_class_no'] as String? ?? '',
+      yearLevel: json['year_level'] as int?,
+      courseType: json['course_type'] as String? ?? '',
+      courseTypeDisplay: json['course_type_display'] as String? ?? '',
+      offeringDepartment: json['offering_department'] as String? ?? '',
+      college: json['college'] as String? ?? '',
+      professor: json['professor'] is Map
+          ? json['professor'] as Map<String, dynamic>
+          : null,
+      schedules: (json['schedules'] as List<dynamic>?)
+              ?.map(
+                  (e) => CourseSchedule.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+
+  /// SubjectDetail 부모 정보와 결합하여 CourseDetail로 변환
+  CourseDetail toCourseDetail({
+    required String courseCode,
+    required String name,
+    required int credits,
+    int? semesterId,
+    String? semesterStr,
+  }) {
+    return CourseDetail(
+      id: id,
+      courseCode: courseCode,
+      name: name,
+      professor: professorId,
+      professorName: professorName,
+      semester: semesterId ?? 0,
+      semesterStr: semesterStr ?? '',
+      credits: credits,
+      yearLevel: yearLevel,
+      section: section,
+      courseType: courseType,
+      courseTypeDisplay: courseTypeDisplay,
+      isElearning: isElearning,
+      departmentName: professorDepartment.isNotEmpty
+          ? professorDepartment
+          : offeringDepartment,
+      gradeEvalType: gradeEvalType,
+      schedules: schedules,
     );
   }
 }
@@ -255,11 +386,29 @@ class Subject {
 class SubjectDetail {
   final String courseCode;
   final String name;
-  final List<CourseDetail> sections;
+  final int credits;
+  final String courseType;
+  final String courseTypeDisplay;
+  final int? yearLevel;
+  final String offeringDepartment;
+  final String college;
+  final int theoryHours;
+  final int practiceHours;
+  final int sectionCount;
+  final List<CourseSection> sections;
 
   const SubjectDetail({
     required this.courseCode,
     required this.name,
+    this.credits = 0,
+    this.courseType = '',
+    this.courseTypeDisplay = '',
+    this.yearLevel,
+    this.offeringDepartment = '',
+    this.college = '',
+    this.theoryHours = 0,
+    this.practiceHours = 0,
+    this.sectionCount = 0,
     required this.sections,
   });
 
@@ -267,8 +416,18 @@ class SubjectDetail {
     return SubjectDetail(
       courseCode: json['course_code'] as String? ?? '',
       name: json['name'] as String? ?? '',
+      credits: json['credits'] as int? ?? 0,
+      courseType: json['course_type'] as String? ?? '',
+      courseTypeDisplay: json['course_type_display'] as String? ?? '',
+      yearLevel: json['year_level'] as int?,
+      offeringDepartment: json['offering_department'] as String? ?? '',
+      college: json['college'] as String? ?? '',
+      theoryHours: json['theory_hours'] as int? ?? 0,
+      practiceHours: json['practice_hours'] as int? ?? 0,
+      sectionCount: json['section_count'] as int? ?? 0,
       sections: (json['sections'] as List<dynamic>?)
-              ?.map((e) => CourseDetail.fromJson(e as Map<String, dynamic>))
+              ?.map(
+                  (e) => CourseSection.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
     );

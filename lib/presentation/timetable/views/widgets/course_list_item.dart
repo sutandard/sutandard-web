@@ -74,7 +74,7 @@ class CourseListItem extends StatelessWidget {
                     Text(
                       schedules!
                           .map((s) =>
-                              '${s.dayDisplay} ${s.startTimeFormatted}~${s.endTimeFormatted} (${s.classroomStr})')
+                              '${s.dayDisplay} ${s.startTimeFormatted}~${s.endTimeFormatted} (${s.classroomStr ?? ''})')
                           .join(', '),
                       style: AppTextStyles.caption,
                       maxLines: 2,

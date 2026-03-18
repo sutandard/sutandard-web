@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/responsive.dart';
+import '../../../core/network/error_handler.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../data/models/course_model.dart';
 import '../../../data/models/review_model.dart';
@@ -40,7 +41,6 @@ class _ReviewViewState extends ConsumerState<ReviewView> {
   int _gradeScore = 3;
   int _assignmentScore = 3;
   int _examScore = 3;
-  bool _isAnonymous = false;
   bool _isSubmitting = false;
 
   @override
@@ -126,7 +126,7 @@ class _ReviewViewState extends ConsumerState<ReviewView> {
         gradeScore: _gradeScore,
         assignmentScore: _assignmentScore,
         examScore: _examScore,
-        isAnonymous: _isAnonymous,
+        isAnonymous: true,
       ));
       if (mounted) {
         showAppSnackBar(context,
@@ -137,7 +137,6 @@ class _ReviewViewState extends ConsumerState<ReviewView> {
           _gradeScore = 3;
           _assignmentScore = 3;
           _examScore = 3;
-          _isAnonymous = false;
           _isSubmitting = false;
         });
         // Reload reviews
@@ -146,8 +145,14 @@ class _ReviewViewState extends ConsumerState<ReviewView> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
-        showAppSnackBar(context,
-            message: '후기 등록에 실패했습니다', type: SnackBarType.error);
+        final errorMsg = extractErrorMessage(e);
+        if (errorMsg.contains('already') || errorMsg.contains('duplicate') || errorMsg.contains('이미')) {
+          showAppSnackBar(context,
+              message: '이미 이 강의에 후기를 등록하셨습니다', type: SnackBarType.error);
+        } else {
+          showAppSnackBar(context,
+              message: '후기 등록에 실패했습니다', type: SnackBarType.error);
+        }
       }
     }
   }
@@ -509,7 +514,7 @@ class _ReviewViewState extends ConsumerState<ReviewView> {
             ...detail.schedules.map((s) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    '${s.dayDisplay} ${s.startTimeFormatted}~${s.endTimeFormatted}  ${s.classroomStr}',
+                    '${s.dayDisplay} ${s.startTimeFormatted}~${s.endTimeFormatted}  ${s.classroomStr ?? ''}',
                     style: AppTextStyles.caption.copyWith(fontSize: 12),
                   ),
                 )),
@@ -539,8 +544,8 @@ class _ReviewViewState extends ConsumerState<ReviewView> {
   }
 
   Widget _buildReviewStats(Map<String, dynamic> stats) {
-    final avg = (stats['average_total_score'] as num?)?.toDouble();
-    final count = stats['review_count'] as int? ?? 0;
+    final avg = (stats['avg_total'] as num?)?.toDouble();
+    final count = stats['count'] as int? ?? 0;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -697,8 +702,6 @@ class _ReviewViewState extends ConsumerState<ReviewView> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          _buildAnonymousToggle(),
           const SizedBox(height: 16),
           SutandardButton(
             label: '후기 등록',
@@ -737,55 +740,6 @@ class _ReviewViewState extends ConsumerState<ReviewView> {
     );
   }
 
-  Widget _buildAnonymousToggle() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: _isAnonymous
-            ? AppColors.primary.withValues(alpha: 0.04)
-            : AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _isAnonymous
-              ? AppColors.primary.withValues(alpha: 0.2)
-              : AppColors.border,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            _isAnonymous
-                ? Icons.visibility_off_rounded
-                : Icons.visibility_rounded,
-            size: 18,
-            color:
-                _isAnonymous ? AppColors.primary : AppColors.textTertiary,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('익명으로 작성',
-                    style: AppTextStyles.subtitle.copyWith(fontSize: 13)),
-                Text('학번이 공개되지 않습니다',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textTertiary,
-                      fontSize: 11,
-                    )),
-              ],
-            ),
-          ),
-          Switch.adaptive(
-            value: _isAnonymous,
-            onChanged: (v) => setState(() => _isAnonymous = v),
-            activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
-            activeThumbColor: AppColors.primary,
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // ─── Subwidgets ────────────────────────────────────────────

@@ -10,6 +10,7 @@ import '../../../data/repositories/course_repository.dart';
 import '../../auth/viewmodels/auth_viewmodel.dart';
 import '../../common/widgets/nav_items_builder.dart';
 import '../../common/widgets/sutandard_nav_bar.dart';
+import '../../timetable/viewmodels/course_search_viewmodel.dart';
 import '../../timetable/views/widgets/timetable_grid.dart';
 import '../../../data/models/timetable_model.dart';
 
@@ -151,6 +152,8 @@ class _ProfessorScheduleViewState
     });
 
     final repo = ref.read(courseRepositoryProvider);
+    final currentSemesterId =
+        ref.read(courseSearchViewModelProvider).selectedSemesterId;
 
     // 교수 상세 정보 (실패해도 과목 로딩은 계속)
     ProfessorDetail? detail;
@@ -158,10 +161,13 @@ class _ProfessorScheduleViewState
       detail = await repo.getProfessorDetail(prof.id);
     } catch (_) {}
 
-    // 교수 시간표 API 시도
+    // 교수 시간표 API 시도 (현재 학기 필터 적용)
     var courses = <CourseDetail>[];
     try {
-      final scheduleData = await repo.getProfessorSchedule(prof.id);
+      final scheduleData = await repo.getProfessorSchedule(
+        prof.id,
+        semester: currentSemesterId,
+      );
       final list = scheduleData['courses'] as List<dynamic>?;
       if (list != null && list.isNotEmpty) {
         for (final item in list) {
@@ -178,7 +184,10 @@ class _ProfessorScheduleViewState
     if (courses.isEmpty) {
       try {
         final response = await repo.getCourses(
-          CourseSearchParams(professor: prof.id),
+          CourseSearchParams(
+            professor: prof.id,
+            semester: currentSemesterId,
+          ),
         );
         for (final course in response.results) {
           try {
@@ -390,33 +399,72 @@ class _ProfessorScheduleViewState
             ),
           );
         }
+
+        // 단과대/학과별 그룹핑
+        final grouped = <String, List<Professor>>{};
+        for (final prof in professors) {
+          final dept = prof.department ?? '소속 미지정';
+          grouped.putIfAbsent(dept, () => []).add(prof);
+        }
+        final sortedKeys = grouped.keys.toList()..sort();
+
         return Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1400),
-            child: ListView.separated(
+            child: ListView.builder(
               padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 24),
-              itemCount: professors.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (_, i) {
-                final prof = professors[i];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor:
-                        AppColors.primary.withValues(alpha: 0.08),
-                    child: Text(
-                      prof.name.isNotEmpty ? prof.name[0] : '?',
-                      style: AppTextStyles.subtitle
-                          .copyWith(color: AppColors.primary),
+              itemCount: sortedKeys.length,
+              itemBuilder: (_, gi) {
+                final deptName = sortedKeys[gi];
+                final profs = grouped[deptName]!;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 12, 0, 6),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(deptName,
+                                style: AppTextStyles.captionBold.copyWith(
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                )),
+                          ),
+                          const SizedBox(width: 8),
+                          Text('${profs.length}명',
+                              style: AppTextStyles.caption
+                                  .copyWith(color: AppColors.textTertiary)),
+                        ],
+                      ),
                     ),
-                  ),
-                  title: Text(prof.name, style: AppTextStyles.subtitle),
-                  subtitle: prof.department != null
-                      ? Text(prof.department!,
-                          style: AppTextStyles.bodySmall)
-                      : null,
-                  trailing: const Icon(Icons.chevron_right_rounded,
-                      color: AppColors.textTertiary),
-                  onTap: () => _loadProfessorSchedule(prof),
+                    ...profs.map((prof) => Column(
+                      children: [
+                        ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor:
+                                AppColors.primary.withValues(alpha: 0.08),
+                            child: Text(
+                              prof.name.isNotEmpty ? prof.name[0] : '?',
+                              style: AppTextStyles.subtitle
+                                  .copyWith(color: AppColors.primary),
+                            ),
+                          ),
+                          title: Text(prof.name, style: AppTextStyles.subtitle),
+                          trailing: const Icon(Icons.chevron_right_rounded,
+                              color: AppColors.textTertiary),
+                          onTap: () => _loadProfessorSchedule(prof),
+                        ),
+                        const Divider(height: 1),
+                      ],
+                    )),
+                  ],
                 );
               },
             ),

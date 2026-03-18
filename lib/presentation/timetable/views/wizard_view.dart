@@ -67,6 +67,12 @@ class _WizardViewState extends ConsumerState<WizardView>
     }
   }
 
+  bool _isCourseAdded(CourseList course) {
+    return _courseGroups.any(
+      (g) => g.sections.any((s) => s.id == course.id),
+    );
+  }
+
   void _addCourseToGroup(CourseList course) {
     setState(() {
       final existingGroup = _courseGroups.where(
@@ -82,8 +88,23 @@ class _WizardViewState extends ConsumerState<WizardView>
           sections: [course],
         ));
       }
-      _searchResults = [];
-      _searchController.clear();
+      _generatedCombinations = [];
+    });
+  }
+
+  void _removeCourseFromGroup(CourseList course) {
+    setState(() {
+      for (int gi = 0; gi < _courseGroups.length; gi++) {
+        final group = _courseGroups[gi];
+        final idx = group.sections.indexWhere((s) => s.id == course.id);
+        if (idx != -1) {
+          group.sections.removeAt(idx);
+          if (group.sections.isEmpty) {
+            _courseGroups.removeAt(gi);
+          }
+          break;
+        }
+      }
       _generatedCombinations = [];
     });
   }
@@ -360,18 +381,29 @@ class _WizardViewState extends ConsumerState<WizardView>
         itemCount: _searchResults.length,
         itemBuilder: (_, i) {
           final course = _searchResults[i];
+          final isAdded = _isCourseAdded(course);
           return ListTile(
             dense: true,
             title: Text(course.name,
-                style: AppTextStyles.body.copyWith(fontSize: 13)),
+                style: AppTextStyles.body.copyWith(
+                  fontSize: 13,
+                  color: isAdded ? AppColors.textSecondary : null,
+                )),
             subtitle: Text(
               '${course.professorName} · ${course.section}분반 · ${course.courseTypeDisplay}',
               style: AppTextStyles.bodySmall.copyWith(fontSize: 11),
             ),
             trailing: IconButton(
-              icon: const Icon(Icons.add_circle_outline_rounded,
-                  size: 22, color: AppColors.primary),
-              onPressed: () => _addCourseToGroup(course),
+              icon: Icon(
+                isAdded
+                    ? Icons.check_circle_rounded
+                    : Icons.add_circle_outline_rounded,
+                size: 22,
+                color: isAdded ? AppColors.success : AppColors.primary,
+              ),
+              onPressed: () => isAdded
+                  ? _removeCourseFromGroup(course)
+                  : _addCourseToGroup(course),
               visualDensity: VisualDensity.compact,
             ),
           );

@@ -65,35 +65,18 @@ class CourseRepositoryImpl implements CourseRepository {
   @override
   Future<List<Semester>> getSemesters() async {
     final response = await _client.get(ApiConstants.semesters);
-    final data = response.data;
-    if (data is List) {
-      return data
-          .map((e) => Semester.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-    if (data is Map<String, dynamic> && data.containsKey('results')) {
-      return (data['results'] as List<dynamic>)
-          .map((e) => Semester.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
+    return _parseList(response.data, Semester.fromJson);
   }
 
   @override
   Future<List<Professor>> getProfessors({String? search}) async {
+    final params = <String, dynamic>{'page_size': 200};
+    if (search != null) params['search'] = search;
     final response = await _client.get(
       ApiConstants.professors,
-      queryParameters: search != null ? {'search': search} : null,
+      queryParameters: params,
     );
-    final data = response.data;
-    if (data is Map<String, dynamic> && data.containsKey('results')) {
-      return (data['results'] as List<dynamic>)
-          .map((e) => Professor.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-    return (data as List<dynamic>)
-        .map((e) => Professor.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return _parseList(response.data, Professor.fromJson);
   }
 
   @override
@@ -115,18 +98,7 @@ class CourseRepositoryImpl implements CourseRepository {
   @override
   Future<List<College>> getColleges() async {
     final response = await _client.get(ApiConstants.colleges);
-    final data = response.data;
-    if (data is List) {
-      return data
-          .map((e) => College.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-    if (data is Map<String, dynamic> && data.containsKey('results')) {
-      return (data['results'] as List<dynamic>)
-          .map((e) => College.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
+    return _parseList(response.data, College.fromJson);
   }
 
   @override
@@ -137,51 +109,33 @@ class CourseRepositoryImpl implements CourseRepository {
     if (college != null) params['college'] = college;
     final response = await _client.get(
       ApiConstants.departments,
-      queryParameters: params.isEmpty ? null : params,
+      queryParameters: params.isNotEmpty ? params : null,
     );
-    final data = response.data;
-    if (data is List) {
-      return data
-          .map((e) => Department.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-    if (data is Map<String, dynamic> && data.containsKey('results')) {
-      return (data['results'] as List<dynamic>)
-          .map((e) => Department.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
+    return _parseList(response.data, Department.fromJson);
   }
 
   @override
   Future<List<Classroom>> getClassrooms() async {
     final response = await _client.get(ApiConstants.classrooms);
-    final data = response.data;
-    if (data is List) {
-      return data
-          .map((e) => Classroom.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-    if (data is Map<String, dynamic> && data.containsKey('results')) {
-      return (data['results'] as List<dynamic>)
-          .map((e) => Classroom.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
+    return _parseList(response.data, Classroom.fromJson);
   }
 
   @override
   Future<List<Classroom>> getAvailableClassrooms() async {
     final response = await _client.get(ApiConstants.availableClassrooms);
-    final data = response.data;
+    return _parseList(response.data, Classroom.fromJson);
+  }
+
+  /// API가 배열 또는 paginated 응답({results: [...]}) 둘 다 반환할 수 있으므로 공통 처리
+  List<T> _parseList<T>(dynamic data, T Function(Map<String, dynamic>) fromJson) {
     if (data is List) {
       return data
-          .map((e) => Classroom.fromJson(e as Map<String, dynamic>))
+          .map((e) => fromJson(e as Map<String, dynamic>))
           .toList();
     }
     if (data is Map<String, dynamic> && data.containsKey('results')) {
       return (data['results'] as List<dynamic>)
-          .map((e) => Classroom.fromJson(e as Map<String, dynamic>))
+          .map((e) => fromJson(e as Map<String, dynamic>))
           .toList();
     }
     return [];
@@ -189,22 +143,12 @@ class CourseRepositoryImpl implements CourseRepository {
 
   @override
   Future<List<Subject>> getSubjects(SubjectSearchParams params) async {
+    final queryParams = params.toQueryParameters();
     final response = await _client.get(
       ApiConstants.subjects,
-      queryParameters: params.toQueryParameters(),
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
     );
-    final data = response.data;
-    if (data is List) {
-      return data
-          .map((e) => Subject.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-    if (data is Map<String, dynamic> && data.containsKey('results')) {
-      return (data['results'] as List<dynamic>)
-          .map((e) => Subject.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
+    return _parseList(response.data, Subject.fromJson);
   }
 
   @override

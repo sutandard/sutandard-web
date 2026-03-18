@@ -31,7 +31,6 @@ class _CourseListViewState extends ConsumerState<CourseListView> {
   int _gradeScore = 3;
   int _assignmentScore = 3;
   int _examScore = 3;
-  bool _isAnonymous = false;
   bool _isSubmitting = false;
   bool _initialSearchDone = false;
 
@@ -114,6 +113,38 @@ class _CourseListViewState extends ConsumerState<CourseListView> {
   }
 
   Widget _buildMobileLayout() {
+    final state = ref.watch(courseSearchViewModelProvider);
+    final course = state.selectedCourseDetail;
+
+    // 분반 선택 시 상세+후기 표시, 아니면 검색 패널
+    if (course != null) {
+      return Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  onPressed: () => ref
+                      .read(courseSearchViewModelProvider.notifier)
+                      .clearSelectedCourse(),
+                ),
+                Expanded(
+                  child: Text(course.name,
+                      style: AppTextStyles.subtitle.copyWith(fontSize: 15),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                ),
+              ],
+            ),
+          ),
+          Container(height: 1, color: AppColors.border),
+          Expanded(child: _buildDetailPanel()),
+        ],
+      );
+    }
+
     return CourseSearchPanel(
       onCourseAdd: null,
       initialQuery: widget.initialQuery,
@@ -263,6 +294,8 @@ class _CourseListViewState extends ConsumerState<CourseListView> {
                 _infoChip('학과', detail.departmentName),
               if (detail.semesterStr.isNotEmpty)
                 _infoChip('학기', detail.semesterStr),
+              if (detail.gradeEvalTypeDisplay.isNotEmpty)
+                _infoChip('성적처리', detail.gradeEvalTypeDisplay),
             ],
           ),
           if (detail.schedules.isNotEmpty) ...[
@@ -274,7 +307,7 @@ class _CourseListViewState extends ConsumerState<CourseListView> {
             ...detail.schedules.map((s) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    '${s.dayDisplay} ${s.startTimeFormatted}~${s.endTimeFormatted}  ${s.classroomStr}',
+                    '${s.dayDisplay} ${s.startTimeFormatted}~${s.endTimeFormatted}  ${s.classroomStr ?? ''}',
                     style: AppTextStyles.caption.copyWith(fontSize: 12),
                   ),
                 )),
@@ -304,8 +337,8 @@ class _CourseListViewState extends ConsumerState<CourseListView> {
   }
 
   Widget _buildReviewStats(Map<String, dynamic> stats) {
-    final avg = (stats['average_total_score'] as num?)?.toDouble();
-    final count = stats['review_count'] as int? ?? 0;
+    final avg = (stats['avg_total'] as num?)?.toDouble();
+    final count = stats['count'] as int? ?? 0;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -473,9 +506,10 @@ class _CourseListViewState extends ConsumerState<CourseListView> {
             child: TextField(
               controller: _contentController,
               maxLines: 4,
+              maxLength: 500,
               style: AppTextStyles.body.copyWith(fontSize: 14),
               decoration: InputDecoration(
-                hintText: '강의에 대한 솔직한 후기를 작성해주세요 (20자 이상)',
+                hintText: '강의에 대한 솔직한 후기를 작성해주세요 (20~500자)',
                 hintStyle: AppTextStyles.bodySmall
                     .copyWith(color: AppColors.textHint),
                 border: InputBorder.none,
@@ -483,8 +517,6 @@ class _CourseListViewState extends ConsumerState<CourseListView> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          _buildAnonymousToggle(),
           const SizedBox(height: 16),
           SutandardButton(
             label: '후기 등록',
@@ -523,55 +555,6 @@ class _CourseListViewState extends ConsumerState<CourseListView> {
     );
   }
 
-  Widget _buildAnonymousToggle() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: _isAnonymous
-            ? AppColors.primary.withValues(alpha: 0.04)
-            : AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _isAnonymous
-              ? AppColors.primary.withValues(alpha: 0.2)
-              : AppColors.border,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            _isAnonymous
-                ? Icons.visibility_off_rounded
-                : Icons.visibility_rounded,
-            size: 18,
-            color: _isAnonymous ? AppColors.primary : AppColors.textTertiary,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('익명으로 작성',
-                    style: AppTextStyles.subtitle.copyWith(fontSize: 13)),
-                Text('학번이 공개되지 않습니다',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textTertiary,
-                      fontSize: 11,
-                    )),
-              ],
-            ),
-          ),
-          Switch.adaptive(
-            value: _isAnonymous,
-            onChanged: (v) => setState(() => _isAnonymous = v),
-            activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
-            activeThumbColor: AppColors.primary,
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _submitReview(CourseSearchState state) async {
     final course = state.selectedCourseDetail;
     if (course == null) return;
@@ -597,6 +580,7 @@ class _CourseListViewState extends ConsumerState<CourseListView> {
         gradeScore: _gradeScore,
         assignmentScore: _assignmentScore,
         examScore: _examScore,
+        isAnonymous: true,
       ));
       if (mounted) {
         showAppSnackBar(context,
@@ -607,7 +591,6 @@ class _CourseListViewState extends ConsumerState<CourseListView> {
           _gradeScore = 3;
           _assignmentScore = 3;
           _examScore = 3;
-          _isAnonymous = false;
           _isSubmitting = false;
         });
         // Reload selected course info to refresh reviews
@@ -618,8 +601,14 @@ class _CourseListViewState extends ConsumerState<CourseListView> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
-        showAppSnackBar(context,
-            message: '후기 등록에 실패했습니다', type: SnackBarType.error);
+        final errorMsg = e.toString();
+        if (errorMsg.contains('already') || errorMsg.contains('duplicate') || errorMsg.contains('이미')) {
+          showAppSnackBar(context,
+              message: '이미 이 강의에 후기를 등록하셨습니다', type: SnackBarType.error);
+        } else {
+          showAppSnackBar(context,
+              message: '후기 등록에 실패했습니다', type: SnackBarType.error);
+        }
       }
     }
   }
@@ -645,12 +634,17 @@ class _TipRow extends StatelessWidget {
   }
 }
 
-class _ReviewCard extends StatelessWidget {
+class _ReviewCard extends ConsumerWidget {
   final CourseReview review;
   const _ReviewCard({required this.review});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authViewModelProvider);
+    final isMyReview = authState.isAuthenticated &&
+        authState.user?.studentId != null &&
+        review.authorName == authState.user!.studentId;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
@@ -670,6 +664,71 @@ class _ReviewCard extends StatelessWidget {
               const SizedBox(width: 5),
               _scoreChip('시험', review.examScore),
               const Spacer(),
+              if (isMyReview)
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_horiz_rounded,
+                      size: 18, color: AppColors.textTertiary),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, size: 16, color: AppColors.error),
+                          SizedBox(width: 6),
+                          Text('삭제', style: TextStyle(color: AppColors.error, fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                  ],
+                  onSelected: (value) async {
+                    if (value == 'delete') {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('후기 삭제'),
+                          content: const Text('이 후기를 삭제하시겠습니까?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('취소'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('삭제',
+                                  style: TextStyle(color: AppColors.error)),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        try {
+                          final repo = ref.read(reviewRepositoryProvider);
+                          await repo.deleteReview(review.id);
+                          if (context.mounted) {
+                            showAppSnackBar(context,
+                                message: '후기가 삭제되었습니다',
+                                type: SnackBarType.success);
+                            // Reload reviews
+                            final state = ref.read(courseSearchViewModelProvider);
+                            if (state.selectedCourseDetail != null) {
+                              ref
+                                  .read(courseSearchViewModelProvider.notifier)
+                                  .selectCourseForInfo(state.selectedCourseDetail!);
+                            }
+                          }
+                        } catch (_) {
+                          if (context.mounted) {
+                            showAppSnackBar(context,
+                                message: '후기 삭제에 실패했습니다',
+                                type: SnackBarType.error);
+                          }
+                        }
+                      }
+                    }
+                  },
+                ),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
