@@ -43,6 +43,7 @@ abstract final class ApiConstants {
   static String timetableCourseDetail(int timetableId, int courseId) =>
       '/api/timetables/$timetableId/courses/$courseId/';
   static const currentClass = '/api/timetables/now/';
+  static const timetableImport = '/api/timetables/import/';
 
   // Reviews
   static const reviews = '/api/reviews/';

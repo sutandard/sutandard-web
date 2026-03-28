@@ -12,8 +12,10 @@ import '../../../data/repositories/course_repository.dart';
 import '../../../data/repositories/review_repository.dart';
 import '../../auth/viewmodels/auth_viewmodel.dart';
 import '../../common/widgets/nav_items_builder.dart';
+import '../../common/widgets/semester_dropdown.dart';
 import '../../common/widgets/sutandard_button.dart';
 import '../../common/widgets/sutandard_nav_bar.dart';
+import '../../timetable/viewmodels/course_search_viewmodel.dart';
 
 // Renamed class — route /reviews
 class ReviewView extends ConsumerStatefulWidget {
@@ -157,6 +159,138 @@ class _ReviewViewState extends ConsumerState<ReviewView> {
     }
   }
 
+  Future<void> _showEditDialog(CourseReview review) async {
+    final editContent = TextEditingController(text: review.content);
+    int editGrade = review.gradeScore;
+    int editAssignment = review.assignmentScore;
+    int editExam = review.examScore;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('후기 수정'),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _ScoreRow(
+                  label: '강의',
+                  score: editGrade,
+                  onChanged: (v) => setDialogState(() => editGrade = v),
+                ),
+                const SizedBox(height: 8),
+                _ScoreRow(
+                  label: '과제',
+                  score: editAssignment,
+                  onChanged: (v) => setDialogState(() => editAssignment = v),
+                ),
+                const SizedBox(height: 8),
+                _ScoreRow(
+                  label: '시험',
+                  score: editExam,
+                  onChanged: (v) => setDialogState(() => editExam = v),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: editContent,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    hintText: '후기 내용 (20자 이상)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('수정'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != true || !mounted) return;
+    if (editContent.text.trim().length < 20) {
+      showAppSnackBar(context,
+          message: '후기는 20자 이상 작성해주세요', type: SnackBarType.error);
+      return;
+    }
+
+    try {
+      final repo = ref.read(reviewRepositoryProvider);
+      await repo.updateReview(
+        review.id,
+        CreateReviewRequest(
+          course: review.course,
+          semesterTaken: review.semesterTaken,
+          content: editContent.text.trim(),
+          gradeScore: editGrade,
+          assignmentScore: editAssignment,
+          examScore: editExam,
+          isAnonymous: review.isAnonymous,
+        ),
+      );
+      if (mounted) {
+        showAppSnackBar(context,
+            message: '후기가 수정되었습니다', type: SnackBarType.success);
+        await _reloadReviews();
+      }
+    } catch (e) {
+      if (mounted) {
+        showAppSnackBar(context,
+            message: '후기 수정에 실패했습니다', type: SnackBarType.error);
+      }
+    }
+  }
+
+  Future<void> _showDeleteDialog(CourseReview review) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('후기 삭제'),
+        content: const Text('이 후기를 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final repo = ref.read(reviewRepositoryProvider);
+      await repo.deleteReview(review.id);
+      if (mounted) {
+        showAppSnackBar(context,
+            message: '후기가 삭제되었습니다', type: SnackBarType.success);
+        await _reloadReviews();
+      }
+    } catch (e) {
+      if (mounted) {
+        showAppSnackBar(context,
+            message: '후기 삭제에 실패했습니다', type: SnackBarType.error);
+      }
+    }
+  }
+
   Future<void> _reloadReviews() async {
     if (_selectedCourse == null) return;
     try {
@@ -266,7 +400,20 @@ class _ReviewViewState extends ConsumerState<ReviewView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('강의 후기', style: AppTextStyles.heading2),
+                Row(
+                  children: [
+                    Text('강의 후기', style: AppTextStyles.heading2),
+                    const Spacer(),
+                    SemesterDropdown(
+                      selectedId: ref.watch(courseSearchViewModelProvider
+                          .select((s) => s.selectedSemesterId)),
+                      onChanged: (id) => ref
+                          .read(courseSearchViewModelProvider.notifier)
+                          .setSemester(id),
+                      compact: true,
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 4),
                 Text('과목을 검색하여 후기를 확인하세요',
                     style: AppTextStyles.bodyLight),
@@ -648,7 +795,11 @@ class _ReviewViewState extends ConsumerState<ReviewView> {
             ),
           )
         else
-          ..._reviews.map((r) => _ReviewCard(review: r)),
+          ..._reviews.map((r) => _ReviewCard(
+                review: r,
+                onEdit: r.isMine ? () => _showEditDialog(r) : null,
+                onDelete: r.isMine ? () => _showDeleteDialog(r) : null,
+              )),
       ],
     );
   }
@@ -780,7 +931,9 @@ class _WriteButton extends StatelessWidget {
 
 class _ReviewCard extends StatelessWidget {
   final CourseReview review;
-  const _ReviewCard({required this.review});
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  const _ReviewCard({required this.review, this.onEdit, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -827,6 +980,28 @@ class _ReviewCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (onEdit != null || onDelete != null) ...[
+                const SizedBox(width: 4),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert_rounded,
+                      size: 18, color: AppColors.textTertiary),
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints(minWidth: 28, minHeight: 28),
+                  itemBuilder: (_) => [
+                    if (onEdit != null)
+                      const PopupMenuItem(
+                          value: 'edit', child: Text('수정')),
+                    if (onDelete != null)
+                      const PopupMenuItem(
+                          value: 'delete', child: Text('삭제')),
+                  ],
+                  onSelected: (v) {
+                    if (v == 'edit') onEdit?.call();
+                    if (v == 'delete') onDelete?.call();
+                  },
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 10),

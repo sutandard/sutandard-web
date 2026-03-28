@@ -11,6 +11,8 @@ import '../../../data/repositories/course_repository.dart';
 import '../../auth/viewmodels/auth_viewmodel.dart';
 import '../../common/widgets/nav_items_builder.dart';
 import '../../common/widgets/sutandard_nav_bar.dart';
+import '../../common/widgets/semester_dropdown.dart';
+import '../../timetable/viewmodels/course_search_viewmodel.dart';
 import '../../timetable/views/widgets/timetable_grid.dart';
 
 final _availableClassroomsProvider =
@@ -68,7 +70,9 @@ class _AvailableClassroomsViewState
 
     try {
       final repo = ref.read(courseRepositoryProvider);
-      final scheduleData = await repo.getClassroomSchedule(classroom.id);
+      final semesterId = ref.read(courseSearchViewModelProvider).selectedSemesterId;
+      final scheduleData = await repo.getClassroomSchedule(classroom.id,
+          semester: semesterId);
 
       // API returns { classroom: {...}, semester: {...}, schedules: [...] }
       final schedulesList = scheduleData['schedules'] as List<dynamic>? ?? [];
@@ -192,6 +196,20 @@ class _AvailableClassroomsViewState
                         ],
                       ),
                     ),
+                    SemesterDropdown(
+                      selectedId: ref.watch(courseSearchViewModelProvider
+                          .select((s) => s.selectedSemesterId)),
+                      onChanged: (id) {
+                        ref
+                            .read(courseSearchViewModelProvider.notifier)
+                            .setSemester(id);
+                        if (_selectedClassroom != null) {
+                          _loadClassroomSchedule(_selectedClassroom!);
+                        }
+                      },
+                      compact: true,
+                    ),
+                    const SizedBox(width: 8),
                     if (_selectedClassroom != null)
                       IconButton(
                         onPressed: () => setState(() {

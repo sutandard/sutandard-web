@@ -66,6 +66,21 @@ class ReviewViewModel extends Notifier<ReviewState> {
     }
   }
 
+  Future<bool> updateReview(int id, CreateReviewRequest request) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final updated = await _repo.updateReview(id, request);
+      state = state.copyWith(
+        isLoading: false,
+        reviews: state.reviews.map((r) => r.id == id ? updated : r).toList(),
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: extractErrorMessage(e));
+      return false;
+    }
+  }
+
   Future<void> deleteReview(int id) async {
     try {
       await _repo.deleteReview(id);

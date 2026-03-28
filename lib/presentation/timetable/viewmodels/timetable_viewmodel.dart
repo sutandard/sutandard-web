@@ -289,6 +289,34 @@ class TimetableViewModel extends Notifier<TimetableState> {
         a.endInMinutes > b.startInMinutes;
   }
 
+  Future<TimetableImportResult?> importFromPortal(
+      String portalPassword, {int? semester}) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final result = await _repository.importFromPortal(
+        portalPassword,
+        semester: semester,
+      );
+      // 가져온 시간표로 상태 업데이트
+      final updatedList = [...state.allTimetables];
+      final existingIdx =
+          updatedList.indexWhere((t) => t.id == result.timetable.id);
+      if (existingIdx >= 0) {
+        updatedList[existingIdx] = result.timetable;
+      } else {
+        updatedList.add(result.timetable);
+      }
+      state = TimetableState(
+        timetable: result.timetable,
+        allTimetables: updatedList,
+      );
+      return result;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: extractErrorMessage(e));
+      return null;
+    }
+  }
+
   void clearError() {
     state = state.copyWith(clearError: true);
   }

@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/filter_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../data/models/course_model.dart';
 import '../../../../data/models/review_model.dart';
+import '../../../../data/repositories/review_repository.dart';
 import '../../../auth/viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/course_search_viewmodel.dart';
 
@@ -172,9 +174,10 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
         children: [
           _buildFilterRow(
             label: '분류',
-            selected: state.courseType,
+            selectedSet: state.courseTypes,
             options: FilterConstants.courseTypes,
-            onSelect: (v) => vm.setCourseType(v),
+            onToggle: (v) => vm.toggleCourseType(v),
+            onClear: () => vm.clearCourseTypes(),
           ),
           const SizedBox(height: 10),
           _buildYearLevelRow(state, vm),
@@ -234,9 +237,10 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
 
   Widget _buildFilterRow({
     required String label,
-    required String? selected,
+    required Set<String> selectedSet,
     required Map<String, String> options,
-    required void Function(String?) onSelect,
+    required void Function(String) onToggle,
+    required VoidCallback onClear,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,16 +254,15 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
           children: [
             _FilterChip(
               label: '전체',
-              selected: selected == null,
-              onTap: () => onSelect(null),
-              showCheck: selected == null,
+              selected: selectedSet.isEmpty,
+              onTap: onClear,
+              showCheck: selectedSet.isEmpty,
             ),
             ...options.entries.map((e) => _FilterChip(
                   label: e.value,
-                  selected: selected == e.key,
-                  onTap: () =>
-                      onSelect(selected == e.key ? null : e.key),
-                  showCheck: selected == e.key,
+                  selected: selectedSet.contains(e.key),
+                  onTap: () => onToggle(e.key),
+                  showCheck: selectedSet.contains(e.key),
                 )),
           ],
         ),
@@ -281,16 +284,15 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
           children: [
             _FilterChip(
               label: '전체',
-              selected: state.yearLevel == null,
-              onTap: () => vm.setYearLevel(null),
-              showCheck: state.yearLevel == null,
+              selected: state.yearLevels.isEmpty,
+              onTap: () => vm.clearYearLevels(),
+              showCheck: state.yearLevels.isEmpty,
             ),
             ...FilterConstants.yearLevels.entries.map((e) => _FilterChip(
                   label: e.value,
-                  selected: state.yearLevel == e.key,
-                  onTap: () => vm.setYearLevel(
-                      state.yearLevel == e.key ? null : e.key),
-                  showCheck: state.yearLevel == e.key,
+                  selected: state.yearLevels.contains(e.key),
+                  onTap: () => vm.toggleYearLevel(e.key),
+                  showCheck: state.yearLevels.contains(e.key),
                 )),
           ],
         ),
@@ -313,18 +315,17 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
             children: [
               _FilterChip(
                 label: '전체',
-                selected: state.selectedCollegeId == null,
-                onTap: () => vm.setCollege(null),
-                showCheck: state.selectedCollegeId == null,
+                selected: state.selectedCollegeIds.isEmpty,
+                onTap: () => vm.clearColleges(),
+                showCheck: state.selectedCollegeIds.isEmpty,
               ),
               ...state.colleges.map((c) => Padding(
                     padding: const EdgeInsets.only(left: 5),
                     child: _FilterChip(
                       label: c.name,
-                      selected: state.selectedCollegeId == c.id,
-                      onTap: () => vm.setCollege(
-                          state.selectedCollegeId == c.id ? null : c.id),
-                      showCheck: state.selectedCollegeId == c.id,
+                      selected: state.selectedCollegeIds.contains(c.id),
+                      onTap: () => vm.toggleCollege(c.id),
+                      showCheck: state.selectedCollegeIds.contains(c.id),
                     ),
                   )),
             ],
@@ -350,18 +351,17 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
             children: [
               _FilterChip(
                 label: '전체',
-                selected: state.department == null,
-                onTap: () => vm.setDepartment(null),
-                showCheck: state.department == null,
+                selected: state.departments_.isEmpty,
+                onTap: () => vm.clearDepartments(),
+                showCheck: state.departments_.isEmpty,
               ),
               ...depts.map((d) => Padding(
                     padding: const EdgeInsets.only(left: 5),
                     child: _FilterChip(
                       label: d.name,
-                      selected: state.department == d.code,
-                      onTap: () => vm.setDepartment(
-                          state.department == d.code ? null : d.code),
-                      showCheck: state.department == d.code,
+                      selected: state.departments_.contains(d.code),
+                      onTap: () => vm.toggleDepartment(d.code),
+                      showCheck: state.departments_.contains(d.code),
                     ),
                   )),
             ],
@@ -444,6 +444,141 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
         );
       },
     );
+  }
+
+  Future<void> _showEditReviewDialog(
+      BuildContext dialogContext, CourseReview review, CourseSearchViewModel vm) async {
+    final editContent = TextEditingController(text: review.content);
+    int editGrade = review.gradeScore;
+    int editAssignment = review.assignmentScore;
+    int editExam = review.examScore;
+
+    final result = await showDialog<bool>(
+      context: dialogContext,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('후기 수정'),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _EditScoreRow(
+                  label: '강의', score: editGrade,
+                  onChanged: (v) => setDialogState(() => editGrade = v),
+                ),
+                const SizedBox(height: 8),
+                _EditScoreRow(
+                  label: '과제', score: editAssignment,
+                  onChanged: (v) => setDialogState(() => editAssignment = v),
+                ),
+                const SizedBox(height: 8),
+                _EditScoreRow(
+                  label: '시험', score: editExam,
+                  onChanged: (v) => setDialogState(() => editExam = v),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: editContent,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    hintText: '후기 내용 (20자 이상)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('수정'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != true || !mounted) return;
+    if (editContent.text.trim().length < 20) {
+      if (mounted) {
+        showAppSnackBar(context,
+            message: '후기는 20자 이상 작성해주세요', type: SnackBarType.error);
+      }
+      return;
+    }
+
+    try {
+      final repo = ref.read(reviewRepositoryProvider);
+      await repo.updateReview(
+        review.id,
+        CreateReviewRequest(
+          course: review.course,
+          semesterTaken: review.semesterTaken,
+          content: editContent.text.trim(),
+          gradeScore: editGrade,
+          assignmentScore: editAssignment,
+          examScore: editExam,
+          isAnonymous: review.isAnonymous,
+        ),
+      );
+      if (mounted) {
+        showAppSnackBar(context,
+            message: '후기가 수정되었습니다', type: SnackBarType.success);
+        final course = ref.read(courseSearchViewModelProvider).selectedCourseDetail;
+        if (course != null) vm.selectCourseForInfo(course);
+      }
+    } catch (_) {
+      if (mounted) {
+        showAppSnackBar(context,
+            message: '후기 수정에 실패했습니다', type: SnackBarType.error);
+      }
+    }
+  }
+
+  Future<void> _showDeleteReviewDialog(
+      BuildContext dialogContext, CourseReview review, CourseSearchViewModel vm) async {
+    final confirmed = await showDialog<bool>(
+      context: dialogContext,
+      builder: (ctx) => AlertDialog(
+        title: const Text('후기 삭제'),
+        content: const Text('이 후기를 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final repo = ref.read(reviewRepositoryProvider);
+      await repo.deleteReview(review.id);
+      if (mounted) {
+        showAppSnackBar(context,
+            message: '후기가 삭제되었습니다', type: SnackBarType.success);
+        final course = ref.read(courseSearchViewModelProvider).selectedCourseDetail;
+        if (course != null) vm.selectCourseForInfo(course);
+      }
+    } catch (_) {
+      if (mounted) {
+        showAppSnackBar(context,
+            message: '후기 삭제에 실패했습니다', type: SnackBarType.error);
+      }
+    }
   }
 
   Widget _buildInfoTab(CourseSearchState state, CourseSearchViewModel vm) {
@@ -624,7 +759,15 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
                   ),
                 )
               else
-                ...reviews.map((r) => _ReviewCard(review: r)),
+                ...reviews.map((r) => _ReviewCard(
+                      review: r,
+                      onEdit: r.isMine
+                          ? () => _showEditReviewDialog(context, r, vm)
+                          : null,
+                      onDelete: r.isMine
+                          ? () => _showDeleteReviewDialog(context, r, vm)
+                          : null,
+                    )),
             ],
           ),
         ),
@@ -698,7 +841,9 @@ class _CourseSearchPanelState extends ConsumerState<CourseSearchPanel>
 
 class _ReviewCard extends StatelessWidget {
   final CourseReview review;
-  const _ReviewCard({required this.review});
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  const _ReviewCard({required this.review, this.onEdit, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -736,6 +881,28 @@ class _ReviewCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (onEdit != null || onDelete != null) ...[
+                const SizedBox(width: 2),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert_rounded,
+                      size: 16, color: AppColors.textTertiary),
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints(minWidth: 24, minHeight: 24),
+                  itemBuilder: (_) => [
+                    if (onEdit != null)
+                      const PopupMenuItem(
+                          value: 'edit', child: Text('수정')),
+                    if (onDelete != null)
+                      const PopupMenuItem(
+                          value: 'delete', child: Text('삭제')),
+                  ],
+                  onSelected: (v) {
+                    if (v == 'edit') onEdit?.call();
+                    if (v == 'delete') onDelete?.call();
+                  },
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 8),
@@ -786,7 +953,7 @@ class _ReviewCard extends StatelessWidget {
   }
 }
 
-class _SubjectCard extends StatelessWidget {
+class _SubjectCard extends StatefulWidget {
   final Subject subject;
   final bool isExpanded;
   final List<CourseDetail> sections;
@@ -810,13 +977,29 @@ class _SubjectCard extends StatelessWidget {
   });
 
   @override
+  State<_SubjectCard> createState() => _SubjectCardState();
+}
+
+class _SubjectCardState extends State<_SubjectCard> {
+  static const _initialDisplayCount = 20;
+  int _displayCount = _initialDisplayCount;
+
+  @override
+  void didUpdateWidget(covariant _SubjectCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.isExpanded && oldWidget.isExpanded) {
+      _displayCount = _initialDisplayCount;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isExpanded
+          color: widget.isExpanded
               ? AppColors.primary.withValues(alpha: 0.3)
               : AppColors.border,
         ),
@@ -825,8 +1008,8 @@ class _SubjectCard extends StatelessWidget {
       child: Column(
         children: [
           InkWell(
-            onTap: onToggle,
-            borderRadius: isExpanded
+            onTap: widget.onToggle,
+            borderRadius: widget.isExpanded
                 ? const BorderRadius.vertical(top: Radius.circular(14))
                 : BorderRadius.circular(14),
             child: Padding(
@@ -840,14 +1023,14 @@ class _SubjectCard extends StatelessWidget {
                         Row(
                           children: [
                             Expanded(
-                              child: Text(subject.name,
+                              child: Text(widget.subject.name,
                                   style: AppTextStyles.subtitle
                                       .copyWith(fontSize: 14),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
                             ),
                             const SizedBox(width: 8),
-                            if (subject.courseTypeDisplay.isNotEmpty)
+                            if (widget.subject.courseTypeDisplay.isNotEmpty)
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 6, vertical: 2),
@@ -856,7 +1039,7 @@ class _SubjectCard extends StatelessWidget {
                                       .withValues(alpha: 0.08),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: Text(subject.courseTypeDisplay,
+                                child: Text(widget.subject.courseTypeDisplay,
                                     style: AppTextStyles.caption.copyWith(
                                       color: AppColors.primary,
                                       fontWeight: FontWeight.w600,
@@ -867,13 +1050,13 @@ class _SubjectCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${subject.courseCode}  ·  ${subject.credits}학점'
-                          '${subject.yearLevel != null ? '  ·  ${subject.yearLevel}학년' : ''}',
+                          '${widget.subject.courseCode}  ·  ${widget.subject.credits}학점'
+                          '${widget.subject.yearLevel != null ? '  ·  ${widget.subject.yearLevel}학년' : ''}',
                           style: AppTextStyles.bodySmall.copyWith(fontSize: 12),
                         ),
-                        if (subject.offeringDepartment.isNotEmpty) ...[
+                        if (widget.subject.offeringDepartment.isNotEmpty) ...[
                           const SizedBox(height: 2),
-                          Text(subject.offeringDepartment,
+                          Text(widget.subject.offeringDepartment,
                               style: AppTextStyles.caption
                                   .copyWith(color: AppColors.textTertiary)),
                         ],
@@ -888,18 +1071,34 @@ class _SubjectCard extends StatelessWidget {
                       color: AppColors.accent.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text('${subject.sectionCount}개 분반',
+                    child: Text('${widget.subject.sectionCount}개 분반',
                         style: AppTextStyles.captionBold.copyWith(
                           fontSize: 11,
                           color: AppColors.accent,
                         )),
                   ),
+                  if (widget.subject.distinctNameCount > 1) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('${widget.subject.distinctNameCount}개 주제',
+                          style: AppTextStyles.captionBold.copyWith(
+                            fontSize: 11,
+                            color: AppColors.warning,
+                          )),
+                    ),
+                  ],
                   const SizedBox(width: 4),
                   AnimatedRotation(
-                    turns: isExpanded ? 0.5 : 0,
+                    turns: widget.isExpanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 200),
                     child: Icon(Icons.expand_more_rounded, size: 22,
-                        color: isExpanded
+                        color: widget.isExpanded
                             ? AppColors.primary
                             : AppColors.textTertiary),
                   ),
@@ -911,7 +1110,7 @@ class _SubjectCard extends StatelessWidget {
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeInOut,
             child:
-                isExpanded ? _buildSectionsArea() : const SizedBox.shrink(),
+                widget.isExpanded ? _buildSectionsArea() : const SizedBox.shrink(),
           ),
         ],
       ),
@@ -919,7 +1118,7 @@ class _SubjectCard extends StatelessWidget {
   }
 
   Widget _buildSectionsArea() {
-    if (loadingSections) {
+    if (widget.loadingSections) {
       return const Padding(
         padding: EdgeInsets.all(20),
         child: Center(
@@ -928,13 +1127,18 @@ class _SubjectCard extends StatelessWidget {
         ),
       );
     }
-    if (sections.isEmpty) {
+    if (widget.sections.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(16),
         child: Text('분반 정보를 불러올 수 없습니다',
             style: AppTextStyles.bodySmall),
       );
     }
+
+    final total = widget.sections.length;
+    final visible = widget.sections.take(_displayCount).toList();
+    final hasMore = _displayCount < total;
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.background.withValues(alpha: 0.5),
@@ -949,26 +1153,63 @@ class _SubjectCard extends StatelessWidget {
                 Icon(Icons.list_alt_rounded,
                     size: 14, color: AppColors.textTertiary),
                 const SizedBox(width: 6),
-                Text('분반 목록 (${sections.length}개)',
+                Text('분반 목록 ($total개)',
                     style: AppTextStyles.captionBold.copyWith(
                       fontSize: 11,
                       color: AppColors.textSecondary,
                     )),
+                if (hasMore) ...[
+                  const SizedBox(width: 6),
+                  Text('${visible.length}개 표시 중',
+                      style: AppTextStyles.caption.copyWith(
+                        fontSize: 10,
+                        color: AppColors.textTertiary,
+                      )),
+                ],
               ],
             ),
           ),
-          ...sections.map((section) => _SectionRow(
+          ...visible.map((section) => _SectionRow(
                 section: section,
-                onAdd: onSectionAdd != null
-                    ? () => onSectionAdd!(section.id)
+                onAdd: widget.onSectionAdd != null
+                    ? () => widget.onSectionAdd!(section.id)
                     : null,
-                onTap: () => onSectionTap(section),
-                onHoverEnter: onSectionHoverEnter != null
-                    ? () => onSectionHoverEnter!(section)
+                onTap: () => widget.onSectionTap(section),
+                onHoverEnter: widget.onSectionHoverEnter != null
+                    ? () => widget.onSectionHoverEnter!(section)
                     : null,
-                onHoverExit: onSectionHoverExit,
+                onHoverExit: widget.onSectionHoverExit,
               )),
-          const SizedBox(height: 6),
+          if (hasMore)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 4, 10, 8),
+              child: SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => setState(() {
+                    _displayCount += _initialDisplayCount;
+                  }),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(
+                          color: AppColors.primary.withValues(alpha: 0.2)),
+                    ),
+                  ),
+                  child: Text(
+                    '더 보기 (${total - visible.length}개 남음)',
+                    style: AppTextStyles.captionBold.copyWith(
+                      color: AppColors.primary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            const SizedBox(height: 6),
         ],
       ),
     );
@@ -1036,6 +1277,18 @@ class _SectionRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (section.topicName != null &&
+                      section.topicName!.isNotEmpty) ...[
+                    Text(section.topicName!,
+                        style: AppTextStyles.subtitle.copyWith(
+                          fontSize: 12,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 2),
+                  ],
                   Row(
                     children: [
                       Flexible(
@@ -1057,6 +1310,23 @@ class _SectionRow extends StatelessWidget {
                           child: Text('이러닝',
                               style: AppTextStyles.caption.copyWith(
                                 color: AppColors.accent,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                              )),
+                        ),
+                      ],
+                      if (section.isForeignOnly) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: AppColors.warning.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text('외국인전용',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.warning,
                                 fontSize: 9,
                                 fontWeight: FontWeight.w600,
                               )),
@@ -1127,6 +1397,66 @@ class _SectionRow extends StatelessWidget {
         ),
       ),
     ),
+    );
+  }
+}
+
+class _EditScoreRow extends StatelessWidget {
+  final String label;
+  final int score;
+  final ValueChanged<int> onChanged;
+
+  const _EditScoreRow({
+    required this.label,
+    required this.score,
+    required this.onChanged,
+  });
+
+  static const _labels = ['D', 'C', 'B', 'A', 'A+'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 36,
+          child: Text(label,
+              style: AppTextStyles.body.copyWith(fontSize: 13)),
+        ),
+        const SizedBox(width: 10),
+        ...List.generate(5, (i) {
+          final val = i + 1;
+          final isSelected = val == score;
+          return Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: GestureDetector(
+              onTap: () => onChanged(val),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color:
+                      isSelected ? AppColors.primary : AppColors.background,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : AppColors.border,
+                  ),
+                ),
+                child: Text(
+                  _labels[i],
+                  style: AppTextStyles.caption.copyWith(
+                    color: isSelected
+                        ? AppColors.onPrimary
+                        : AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 }

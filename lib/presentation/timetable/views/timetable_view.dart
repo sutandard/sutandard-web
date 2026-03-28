@@ -753,6 +753,16 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                   ),
                 ),
               const PopupMenuItem(
+                value: 'import',
+                child: Row(
+                  children: [
+                    Icon(Icons.download_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('포털에서 불러오기'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
                 value: 'wizard',
                 child: Row(
                   children: [
@@ -773,6 +783,8 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                   _exportTimetableICS(context, state);
                 case 'delete':
                   _showDeleteTimetableConfirm(context, ref, state);
+                case 'import':
+                  _showImportDialog(context, ref, state);
                 case 'wizard':
                   context.go('/wizard');
               }
@@ -1420,6 +1432,239 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
     final todayIndex = today.weekday - 1;
     final daysAhead = (dayIndex - todayIndex) % 7;
     return DateTime(today.year, today.month, today.day + daysAhead);
+  }
+
+  void _showImportDialog(
+      BuildContext context, WidgetRef ref, TimetableState state) {
+    final passwordController = TextEditingController();
+    bool isLoading = false;
+    bool obscurePassword = true;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => Dialog(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20)),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.download_rounded,
+                        size: 28, color: AppColors.primary),
+                  ),
+                  const SizedBox(height: 18),
+                  Text('포털에서 시간표 불러오기',
+                      style: AppTextStyles.heading3),
+                  const SizedBox(height: 8),
+                  Text(
+                    '수원대학교 포털 비밀번호를 입력하면\n수강신청 내역을 자동으로 불러옵니다',
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.textSecondary),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: obscurePassword,
+                    style: AppTextStyles.body.copyWith(fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: '포털 비밀번호',
+                      hintStyle: AppTextStyles.bodySmall
+                          .copyWith(color: AppColors.textHint),
+                      prefixIcon: const Icon(Icons.lock_outline_rounded,
+                          size: 20, color: AppColors.textTertiary),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscurePassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          size: 20,
+                          color: AppColors.textTertiary,
+                        ),
+                        onPressed: () => setDialogState(
+                            () => obscurePassword = !obscurePassword),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: AppColors.warning.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline_rounded,
+                            size: 14,
+                            color: AppColors.warning),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '비밀번호는 서버에 저장되지 않으며,\n포털 조회 후 즉시 폐기됩니다.',
+                            style: AppTextStyles.caption.copyWith(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SutandardButton(
+                          label: '취소',
+                          variant: SutandardButtonVariant.secondary,
+                          onPressed:
+                              isLoading ? null : () => Navigator.pop(ctx),
+                          height: 44,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SutandardButton(
+                          label: isLoading ? '불러오는 중...' : '불러오기',
+                          onPressed: isLoading
+                              ? null
+                              : () async {
+                                  if (passwordController.text.trim().isEmpty) {
+                                    return;
+                                  }
+                                  setDialogState(() => isLoading = true);
+                                  final result = await ref
+                                      .read(
+                                          timetableViewModelProvider.notifier)
+                                      .importFromPortal(
+                                        passwordController.text.trim(),
+                                        semester: state.timetable?.semester,
+                                      );
+                                  if (!ctx.mounted) return;
+                                  Navigator.pop(ctx);
+                                  if (result != null && context.mounted) {
+                                    _showImportResult(context, result);
+                                  }
+                                },
+                          height: 44,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showImportResult(
+      BuildContext context, TimetableImportResult result) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppColors.successHigh.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check_circle_outline_rounded,
+                      size: 28, color: AppColors.successHigh),
+                ),
+                const SizedBox(height: 18),
+                Text('불러오기 완료', style: AppTextStyles.heading3),
+                const SizedBox(height: 12),
+                Text(
+                  '${result.matchedCount}개 과목이 시간표에 추가되었습니다',
+                  style: AppTextStyles.body.copyWith(fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+                if (result.unmatched.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color: AppColors.warning.withValues(alpha: 0.2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '매칭되지 않은 과목 (${result.unmatched.length}개)',
+                          style: AppTextStyles.captionBold.copyWith(
+                            color: AppColors.warning,
+                            fontSize: 11,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        ...result.unmatched.map((name) => Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Text('· $name',
+                                  style: AppTextStyles.caption.copyWith(
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary,
+                                  )),
+                            )),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                SutandardButton(
+                  label: '확인',
+                  onPressed: () => Navigator.pop(ctx),
+                  height: 44,
+                  fontSize: 14,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   String _icsEscape(String text) =>

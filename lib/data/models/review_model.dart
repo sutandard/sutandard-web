@@ -14,6 +14,7 @@ class CourseReview {
   final DateTime updatedAt;
   final String courseName;
   final String professorName;
+  final bool isMine;
 
   const CourseReview({
     required this.id,
@@ -31,6 +32,7 @@ class CourseReview {
     required this.updatedAt,
     this.courseName = '',
     this.professorName = '',
+    this.isMine = false,
   });
 
   factory CourseReview.fromJson(Map<String, dynamic> json) {
@@ -50,6 +52,7 @@ class CourseReview {
       updatedAt: DateTime.parse(json['updated_at'] as String),
       courseName: json['course_name'] as String? ?? '',
       professorName: json['professor_name'] as String? ?? '',
+      isMine: json['is_mine'] as bool? ?? false,
     );
   }
 

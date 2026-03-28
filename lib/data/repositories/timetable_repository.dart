@@ -14,6 +14,8 @@ abstract class TimetableRepository {
       int timetableId, int courseId, {String? color});
   Future<void> removeCourse(int timetableId, int courseId);
   Future<Map<String, dynamic>?> getCurrentClass();
+  Future<TimetableImportResult> importFromPortal(
+      String portalPassword, {int? semester});
 }
 
 class TimetableRepositoryImpl implements TimetableRepository {
@@ -109,6 +111,19 @@ class TimetableRepositoryImpl implements TimetableRepository {
     final data = response.data;
     if (data is Map<String, dynamic>) return data;
     return null;
+  }
+
+  @override
+  Future<TimetableImportResult> importFromPortal(
+      String portalPassword, {int? semester}) async {
+    final data = <String, dynamic>{'portal_password': portalPassword};
+    if (semester != null) data['semester'] = semester;
+    final response = await _client.post(
+      ApiConstants.timetableImport,
+      data: data,
+    );
+    return TimetableImportResult.fromJson(
+        response.data as Map<String, dynamic>);
   }
 }
 

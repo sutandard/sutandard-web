@@ -128,6 +128,8 @@ class CourseDetail extends CourseList {
   final List<CourseSchedule> schedules;
   final Map<String, dynamic>? reviewStats;
   final List<dynamic>? siblingSections;
+  final String? topicName;
+  final bool isForeignOnly;
 
   CourseDetail({
     required super.id,
@@ -149,6 +151,8 @@ class CourseDetail extends CourseList {
     required this.schedules,
     this.reviewStats,
     this.siblingSections,
+    this.topicName,
+    this.isForeignOnly = false,
   });
 
   factory CourseDetail.fromJson(Map<String, dynamic> json) {
@@ -239,6 +243,7 @@ class Subject {
   final int practiceHours;
   final int sectionCount;
   final int elearningCount;
+  final int distinctNameCount;
 
   const Subject({
     required this.courseCode,
@@ -253,6 +258,7 @@ class Subject {
     this.practiceHours = 0,
     required this.sectionCount,
     this.elearningCount = 0,
+    this.distinctNameCount = 1,
   });
 
   factory Subject.fromJson(Map<String, dynamic> json) {
@@ -269,6 +275,7 @@ class Subject {
       practiceHours: json['practice_hours'] as int? ?? 0,
       sectionCount: json['section_count'] as int? ?? 1,
       elearningCount: json['elearning_count'] as int? ?? 0,
+      distinctNameCount: json['distinct_name_count'] as int? ?? 1,
     );
   }
 }
@@ -276,6 +283,7 @@ class Subject {
 class CourseSection {
   final int id;
   final String section;
+  final String? name;
   final String sectionType;
   final String dayNight;
   final String gradeEvalType;
@@ -293,6 +301,7 @@ class CourseSection {
   const CourseSection({
     required this.id,
     required this.section,
+    this.name,
     this.sectionType = '',
     this.dayNight = '',
     this.gradeEvalType = '',
@@ -315,6 +324,22 @@ class CourseSection {
   String get professorDepartment =>
       professor != null ? (professor!['department'] as String? ?? '') : '';
 
+  /// 괄호 안 주제명 추출: "글로벌교양3(영화로세상보기)" → "영화로세상보기"
+  String? get topicName {
+    if (name == null) return null;
+    final match = RegExp(r'\((.+)\)$').firstMatch(name!);
+    return match?.group(1);
+  }
+
+  /// "외국인전용_", "이러닝_" 접두어 제거한 이름
+  String? get cleanName {
+    if (name == null) return null;
+    return name!.replaceFirst(RegExp(r'^(외국인전용_|이러닝_)'), '');
+  }
+
+  /// "외국인전용_" 접두어 분반 여부
+  bool get isForeignOnly => name?.startsWith('외국인전용_') ?? false;
+
   /// 성적처리 표시
   String get gradeEvalTypeDisplay {
     if (gradeEvalType.isEmpty) return '';
@@ -330,6 +355,7 @@ class CourseSection {
     return CourseSection(
       id: json['id'] as int,
       section: json['section'] as String? ?? '',
+      name: json['name'] as String?,
       sectionType: json['section_type'] as String? ?? '',
       dayNight: json['day_night'] as String? ?? '',
       gradeEvalType: json['grade_eval_type'] as String? ?? '',
@@ -363,7 +389,7 @@ class CourseSection {
     return CourseDetail(
       id: id,
       courseCode: courseCode,
-      name: name,
+      name: cleanName ?? name,
       professor: professorId,
       professorName: professorName,
       semester: semesterId ?? 0,
@@ -374,11 +400,14 @@ class CourseSection {
       courseType: courseType,
       courseTypeDisplay: courseTypeDisplay,
       isElearning: isElearning,
-      departmentName: professorDepartment.isNotEmpty
-          ? professorDepartment
-          : offeringDepartment,
+      departmentName: [
+        college,
+        professorDepartment.isNotEmpty ? professorDepartment : offeringDepartment,
+      ].where((s) => s.isNotEmpty).join(' · '),
       gradeEvalType: gradeEvalType,
       schedules: schedules,
+      topicName: topicName,
+      isForeignOnly: isForeignOnly,
     );
   }
 }
@@ -440,7 +469,7 @@ class SubjectSearchParams {
   final String? courseType;
   final String? college;
   final String? department;
-  final int? yearLevel;
+  final String? yearLevel;
   final String? ordering;
 
   const SubjectSearchParams({

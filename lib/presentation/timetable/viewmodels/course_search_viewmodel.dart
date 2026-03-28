@@ -8,11 +8,11 @@ import '../../../data/repositories/review_repository.dart';
 
 class CourseSearchState {
   final String query;
-  final String? courseType;
+  final Set<String> courseTypes;
   final bool? isElearning;
-  final int? yearLevel;
-  final String? department;
-  final int? selectedCollegeId;
+  final Set<int> yearLevels;
+  final Set<String> departments_;
+  final Set<int> selectedCollegeIds;
   final List<Subject> subjects;
   final bool isLoading;
   final String? error;
@@ -30,11 +30,11 @@ class CourseSearchState {
 
   const CourseSearchState({
     this.query = '',
-    this.courseType,
+    this.courseTypes = const {},
     this.isElearning,
-    this.yearLevel,
-    this.department,
-    this.selectedCollegeId,
+    this.yearLevels = const {},
+    this.departments_ = const {},
+    this.selectedCollegeIds = const {},
     this.subjects = const [],
     this.isLoading = false,
     this.error,
@@ -50,27 +50,27 @@ class CourseSearchState {
   });
 
   bool get hasActiveFilters =>
-      courseType != null ||
+      courseTypes.isNotEmpty ||
       isElearning != null ||
-      yearLevel != null ||
-      department != null ||
-      selectedCollegeId != null;
+      yearLevels.isNotEmpty ||
+      departments_.isNotEmpty ||
+      selectedCollegeIds.isNotEmpty;
 
-  /// Returns filtered departments based on selected college
+  /// Returns filtered departments based on selected colleges
   List<Department> get filteredDepartments {
-    if (selectedCollegeId == null) return departments;
+    if (selectedCollegeIds.isEmpty) return departments;
     return departments
-        .where((d) => d.college == selectedCollegeId)
+        .where((d) => selectedCollegeIds.contains(d.college))
         .toList();
   }
 
   CourseSearchState copyWith({
     String? query,
-    Object? courseType = _sentinel,
+    Set<String>? courseTypes,
     Object? isElearning = _sentinel,
-    Object? yearLevel = _sentinel,
-    Object? department = _sentinel,
-    Object? selectedCollegeId = _sentinel,
+    Set<int>? yearLevels,
+    Set<String>? departments_,
+    Set<int>? selectedCollegeIds,
     List<Subject>? subjects,
     bool? isLoading,
     String? error,
@@ -88,31 +88,18 @@ class CourseSearchState {
   }) {
     return CourseSearchState(
       query: query ?? this.query,
-      courseType: clearFilters
-          ? null
-          : courseType == _sentinel
-              ? this.courseType
-              : courseType as String?,
+      courseTypes: clearFilters ? const {} : (courseTypes ?? this.courseTypes),
       isElearning: clearFilters
           ? null
           : isElearning == _sentinel
               ? this.isElearning
               : isElearning as bool?,
-      yearLevel: clearFilters
-          ? null
-          : yearLevel == _sentinel
-              ? this.yearLevel
-              : yearLevel as int?,
-      department: clearFilters
-          ? null
-          : department == _sentinel
-              ? this.department
-              : department as String?,
-      selectedCollegeId: clearFilters
-          ? null
-          : selectedCollegeId == _sentinel
-              ? this.selectedCollegeId
-              : selectedCollegeId as int?,
+      yearLevels: clearFilters ? const {} : (yearLevels ?? this.yearLevels),
+      departments_:
+          clearFilters ? const {} : (departments_ ?? this.departments_),
+      selectedCollegeIds: clearFilters
+          ? const {}
+          : (selectedCollegeIds ?? this.selectedCollegeIds),
       subjects: subjects ?? this.subjects,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
@@ -184,22 +171,28 @@ class CourseSearchViewModel extends Notifier<CourseSearchState> {
       selectedCourseReviews: [],
     );
 
-    // Determine college name for API filter (subjects endpoint takes string)
+    // Determine college names for API filter (subjects endpoint takes string)
     String? collegeName;
-    if (state.selectedCollegeId != null) {
-      final match = state.colleges
-          .where((c) => c.id == state.selectedCollegeId)
-          .firstOrNull;
-      collegeName = match?.name;
+    if (state.selectedCollegeIds.isNotEmpty) {
+      final names = state.colleges
+          .where((c) => state.selectedCollegeIds.contains(c.id))
+          .map((c) => c.name);
+      if (names.isNotEmpty) collegeName = names.join(',');
     }
 
     try {
       final results = await _repo.getSubjects(SubjectSearchParams(
         search: query.isEmpty ? null : query,
         semester: state.selectedSemesterId,
-        courseType: state.courseType,
-        department: state.department,
-        yearLevel: state.yearLevel,
+        courseType: state.courseTypes.isEmpty
+            ? null
+            : state.courseTypes.join(','),
+        department: state.departments_.isEmpty
+            ? null
+            : state.departments_.join(','),
+        yearLevel: state.yearLevels.isEmpty
+            ? null
+            : state.yearLevels.join(','),
         college: collegeName,
       ));
       state = state.copyWith(
@@ -242,8 +235,25 @@ class CourseSearchViewModel extends Notifier<CourseSearchState> {
         subject.courseCode,
         semester: state.selectedSemesterId,
       );
+
+      // Subject 목록은 college/department 필터가 적용된 sectionCount를 보여줌.
+      // SubjectDetail은 해당 courseCode의 전체 분반을 반환하므로,
+      // Subject의 college/offeringDepartment로 필터링하여 일치시킴.
+      var filtered = detail.sections;
+      if (subject.offeringDepartment.isNotEmpty) {
+        final byDept = filtered
+            .where((s) => s.offeringDepartment == subject.offeringDepartment)
+            .toList();
+        if (byDept.isNotEmpty) filtered = byDept;
+      } else if (subject.college.isNotEmpty) {
+        final byCollege = filtered
+            .where((s) => s.college == subject.college)
+            .toList();
+        if (byCollege.isNotEmpty) filtered = byCollege;
+      }
+
       // Convert CourseSection → CourseDetail for UI compatibility
-      final sections = detail.sections
+      final sections = filtered
           .map((s) => s.toCourseDetail(
                 courseCode: detail.courseCode,
                 name: detail.name,
@@ -298,8 +308,15 @@ class CourseSearchViewModel extends Notifier<CourseSearchState> {
     );
   }
 
-  void setCourseType(String? type) {
-    state = state.copyWith(courseType: type);
+  void toggleCourseType(String type) {
+    final updated = Set<String>.from(state.courseTypes);
+    if (!updated.remove(type)) updated.add(type);
+    state = state.copyWith(courseTypes: updated);
+    searchWithFilters();
+  }
+
+  void clearCourseTypes() {
+    state = state.copyWith(courseTypes: const {});
     searchWithFilters();
   }
 
@@ -308,22 +325,56 @@ class CourseSearchViewModel extends Notifier<CourseSearchState> {
     searchWithFilters();
   }
 
-  void setYearLevel(int? level) {
-    state = state.copyWith(yearLevel: level);
+  void toggleYearLevel(int level) {
+    final updated = Set<int>.from(state.yearLevels);
+    if (!updated.remove(level)) updated.add(level);
+    state = state.copyWith(yearLevels: updated);
     searchWithFilters();
   }
 
-  void setCollege(int? collegeId) {
-    // When college changes, clear department selection
+  void clearYearLevels() {
+    state = state.copyWith(yearLevels: const {});
+    searchWithFilters();
+  }
+
+  void toggleCollege(int collegeId) {
+    final updated = Set<int>.from(state.selectedCollegeIds);
+    if (updated.remove(collegeId)) {
+      // 해제된 단과대의 학과도 제거
+      final removedCollegeDepts = state.departments
+          .where((d) => d.college == collegeId)
+          .map((d) => d.code)
+          .toSet();
+      final updatedDepts = Set<String>.from(state.departments_)
+        ..removeAll(removedCollegeDepts);
+      state = state.copyWith(
+        selectedCollegeIds: updated,
+        departments_: updatedDepts,
+      );
+    } else {
+      updated.add(collegeId);
+      state = state.copyWith(selectedCollegeIds: updated);
+    }
+    searchWithFilters();
+  }
+
+  void clearColleges() {
     state = state.copyWith(
-      selectedCollegeId: collegeId,
-      department: null,
+      selectedCollegeIds: const {},
+      departments_: const {},
     );
     searchWithFilters();
   }
 
-  void setDepartment(String? code) {
-    state = state.copyWith(department: code);
+  void toggleDepartment(String code) {
+    final updated = Set<String>.from(state.departments_);
+    if (!updated.remove(code)) updated.add(code);
+    state = state.copyWith(departments_: updated);
+    searchWithFilters();
+  }
+
+  void clearDepartments() {
+    state = state.copyWith(departments_: const {});
     searchWithFilters();
   }
 

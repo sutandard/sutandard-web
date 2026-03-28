@@ -111,6 +111,29 @@ class TimetableCreate {
   }
 }
 
+class TimetableImportResult {
+  final Timetable timetable;
+  final int matchedCount;
+  final List<String> unmatched;
+
+  const TimetableImportResult({
+    required this.timetable,
+    required this.matchedCount,
+    this.unmatched = const [],
+  });
+
+  factory TimetableImportResult.fromJson(Map<String, dynamic> json) {
+    return TimetableImportResult(
+      timetable: Timetable.fromJson(json['timetable'] as Map<String, dynamic>),
+      matchedCount: json['matched_count'] as int? ?? 0,
+      unmatched: (json['unmatched'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+    );
+  }
+}
+
 class AddCourseRequest {
   final int courseId;
   final String color;
