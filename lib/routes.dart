@@ -6,6 +6,9 @@ import 'presentation/auth/views/forgot_password_view.dart';
 import 'presentation/auth/views/login_view.dart';
 import 'presentation/auth/views/register_view.dart';
 import 'presentation/classroom/views/available_classrooms_view.dart';
+import 'presentation/community/views/community_feed_view.dart';
+import 'presentation/community/views/post_create_view.dart';
+import 'presentation/community/views/post_detail_view.dart';
 import 'presentation/courses/views/course_list_view.dart';
 import 'presentation/home/views/home_view.dart';
 import 'presentation/professor/views/professor_schedule_view.dart';
@@ -39,9 +42,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           state.matchedLocation == '/register' ||
           state.matchedLocation == '/forgot-password';
 
-      final protectedRoutes = ['/wizard'];
-      if (!isAuthenticated &&
-          protectedRoutes.contains(state.matchedLocation)) {
+      final protectedRoutes = ['/wizard', '/community/create'];
+      final isProtected = protectedRoutes.contains(state.matchedLocation) ||
+          state.matchedLocation.startsWith('/community');
+      if (!isAuthenticated && isProtected) {
         return '/login';
       }
 
@@ -97,6 +101,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'wizard',
         pageBuilder: (context, state) =>
             _fadePage(state, const WizardView()),
+      ),
+      GoRoute(
+        path: '/community',
+        name: 'community',
+        pageBuilder: (context, state) =>
+            _fadePage(state, const CommunityFeedView()),
+      ),
+      GoRoute(
+        path: '/community/create',
+        name: 'community-create',
+        pageBuilder: (context, state) =>
+            _fadePage(state, const PostCreateView()),
+      ),
+      GoRoute(
+        path: '/community/:id',
+        name: 'community-detail',
+        pageBuilder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return _fadePage(state, PostDetailView(postId: id));
+        },
       ),
       GoRoute(
         path: '/classrooms',

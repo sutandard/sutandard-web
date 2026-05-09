@@ -35,8 +35,8 @@ No test suite exists yet.
 **Clean architecture** with three layers under `lib/`:
 
 - **`core/`** — Constants (API endpoints, app config), network layer (Dio client, auth interceptor, token storage), theme (Material 3, SUITE font), utilities (responsive breakpoints, snackbar, platform-conditional file download)
-- **`data/`** — Models with manual `fromJson()` factories (no code generation), repository pattern (abstract + impl) for auth, courses, timetables, reviews
-- **`presentation/`** — Feature folders (auth, home, timetable, courses, classroom, professor, review, common), each with views, viewmodels, and widgets subdirectories
+- **`data/`** — Models with manual `fromJson()` factories (no code generation), repository pattern (abstract + impl) for auth, courses, timetables, reviews, community, home
+- **`presentation/`** — Feature folders (auth, home, timetable, courses, classroom, professor, review, community, common), each with views, viewmodels, and widgets subdirectories
 
 **State management:** Riverpod with `NotifierProvider` for viewmodels, `Provider` for singletons (ApiClient, TokenStorage).
 
@@ -52,7 +52,9 @@ No test suite exists yet.
 - Platform-conditional web file download via conditional exports (`download_utils.dart` → `download_web.dart` / `download_stub.dart`)
 - Logo widget: `SutandardLogo(variant: textOnly)` uses `Logo.svg`; `full` variant uses `Sutandard.svg`
 - Timetable auto-create uses `latest.label` (e.g. "2025년 1학기"), not `shortLabel`
-- `/timetable` route is unprotected (guest access with mock timetable); `/wizard` requires auth
+- API endpoints use `/api/v1/` prefix (versioned)
+- `/timetable` route is unprotected (guest access with mock timetable); `/wizard` and `/community` require auth
+- Community feature uses `ContentWidget` (not `Widget`) to avoid Flutter naming collision; `WidgetTypeEnum`: `course`, `timetable`, `course_recommendation`
 
 ## Deployment
 

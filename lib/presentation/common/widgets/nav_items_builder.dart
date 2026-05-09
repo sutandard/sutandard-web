@@ -20,4 +20,9 @@ List<NavItem> buildMainNavItems(
         isActive: currentLocation.startsWith('/classrooms'),
         onTap: () => context.go('/classrooms'),
       ),
+      NavItem(
+        label: '커뮤니티',
+        isActive: currentLocation.startsWith('/community'),
+        onTap: () => context.go('/community'),
+      ),
     ];

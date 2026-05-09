@@ -1081,10 +1081,10 @@ class _QuickAccessCards extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _QuickCard(
-                      title: '오늘의 학식',
-                      subtitle: '학생식당 메뉴 보기',
-                      icon: Icons.restaurant_menu_rounded,
-                      onTap: () => _showComingSoon(context),
+                      title: '커뮤니티',
+                      subtitle: '학우들과 소통하기',
+                      icon: Icons.forum_outlined,
+                      onTap: () => context.go('/community'),
                     ),
                   ],
                 )
@@ -1110,10 +1110,10 @@ class _QuickAccessCards extends StatelessWidget {
                     const SizedBox(width: 16),
                     Expanded(
                       child: _QuickCard(
-                        title: '오늘의 학식',
-                        subtitle: '학생식당 메뉴 보기',
-                        icon: Icons.restaurant_menu_rounded,
-                        onTap: () => _showComingSoon(context),
+                        title: '커뮤니티',
+                        subtitle: '학우들과 소통하기',
+                        icon: Icons.forum_outlined,
+                        onTap: () => context.go('/community'),
                       ),
                     ),
                   ],
@@ -1123,15 +1123,6 @@ class _QuickAccessCards extends StatelessWidget {
     );
   }
 
-  void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('학식 메뉴 기능은 곧 출시됩니다!'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
 }
 
 class _QuickCard extends StatefulWidget {
