@@ -296,19 +296,19 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: 결과 정렬 시 사용할 필드.
+        description: Which field to use when ordering the results.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: 페이지네이션된 결과 집합 내의 페이지 번호.
+        description: A page number within the paginated result set.
         schema:
           type: integer
       - name: search
         required: false
         in: query
-        description: 검색어.
+        description: A search term.
         schema:
           type: string
       tags:
@@ -487,13 +487,13 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: 결과 정렬 시 사용할 필드.
+        description: Which field to use when ordering the results.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: 페이지네이션된 결과 집합 내의 페이지 번호.
+        description: A page number within the paginated result set.
         schema:
           type: integer
       - in: path
@@ -504,7 +504,7 @@ paths:
       - name: search
         required: false
         in: query
-        description: 검색어.
+        description: A search term.
         schema:
           type: string
       tags:
@@ -622,13 +622,13 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: 결과 정렬 시 사용할 필드.
+        description: Which field to use when ordering the results.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: 페이지네이션된 결과 집합 내의 페이지 번호.
+        description: A page number within the paginated result set.
         schema:
           type: integer
       - in: query
@@ -644,7 +644,7 @@ paths:
       - name: search
         required: false
         in: query
-        description: 검색어.
+        description: A search term.
         schema:
           type: string
       - in: query
@@ -720,13 +720,13 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: 결과 정렬 시 사용할 필드.
+        description: Which field to use when ordering the results.
         schema:
           type: string
       - name: search
         required: false
         in: query
-        description: 검색어.
+        description: A search term.
         schema:
           type: string
       tags:
@@ -798,7 +798,7 @@ paths:
       - name: search
         required: false
         in: query
-        description: 검색어.
+        description: A search term.
         schema:
           type: string
       tags:
@@ -827,7 +827,7 @@ paths:
       - name: search
         required: false
         in: query
-        description: 검색어.
+        description: A search term.
         schema:
           type: string
       tags:
@@ -860,13 +860,13 @@ paths:
       - name: page
         required: false
         in: query
-        description: 페이지네이션된 결과 집합 내의 페이지 번호.
+        description: A page number within the paginated result set.
         schema:
           type: integer
       - name: search
         required: false
         in: query
-        description: 검색어.
+        description: A search term.
         schema:
           type: string
       tags:
@@ -951,13 +951,13 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: 결과 정렬 시 사용할 필드.
+        description: Which field to use when ordering the results.
         schema:
           type: string
       - name: search
         required: false
         in: query
-        description: 검색어.
+        description: A search term.
         schema:
           type: string
       tags:
@@ -1066,13 +1066,13 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: 결과 정렬 시 사용할 필드.
+        description: Which field to use when ordering the results.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: 페이지네이션된 결과 집합 내의 페이지 번호.
+        description: A page number within the paginated result set.
         schema:
           type: integer
       tags:
@@ -1220,19 +1220,19 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: 결과 정렬 시 사용할 필드.
+        description: Which field to use when ordering the results.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: 페이지네이션된 결과 집합 내의 페이지 번호.
+        description: A page number within the paginated result set.
         schema:
           type: integer
       - name: search
         required: false
         in: query
-        description: 검색어.
+        description: A search term.
         schema:
           type: string
       tags:
@@ -1780,9 +1780,8 @@ components:
           readOnly: true
         credits:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 32767
           minimum: 0
-          format: int64
           title: 학점
         year_level:
           type: integer
@@ -1869,9 +1868,8 @@ components:
           readOnly: true
         credits:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 32767
           minimum: 0
-          format: int64
           title: 학점
         year_level:
           type: integer
@@ -2782,9 +2780,8 @@ components:
           maxLength: 10
         credits:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 32767
           minimum: 0
-          format: int64
           title: 학점
         schedules:
           type: array
@@ -2934,9 +2931,8 @@ components:
           readOnly: true
         year:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 32767
           minimum: 0
-          format: int64
           title: 연도
         term:
           allOf:

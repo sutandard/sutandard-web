@@ -1,0 +1,5134 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Sutandard API",
+        "version": "1.1.0",
+        "description": "수원대학교 시간표 관리 서비스 Sutandard의 REST API 문서입니다."
+    },
+    "paths": {
+        "/api/v1/auth/change-password/": {
+            "post": {
+                "operationId": "v1_auth_change_password_create",
+                "description": "현재 사이트 비밀번호를 확인하고 새 비밀번호로 변경합니다.",
+                "summary": "비밀번호 변경",
+                "tags": [
+                    "인증"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePassword"
+                            },
+                            "examples": {
+                                "요청예시": {
+                                    "value": {
+                                        "current_password": "mysite_pw123!",
+                                        "new_password": "newsite_pw456!",
+                                        "new_password_confirm": "newsite_pw456!"
+                                    },
+                                    "summary": "요청 예시"
+                                }
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePassword"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePassword"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/login/": {
+            "post": {
+                "operationId": "v1_auth_login_create",
+                "description": "학번과 사이트 비밀번호로 로그인하고 JWT 토큰을 반환합니다.",
+                "summary": "로그인",
+                "tags": [
+                    "인증"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Login"
+                            },
+                            "examples": {
+                                "요청예시": {
+                                    "value": {
+                                        "student_id": "20201234",
+                                        "password": "mysite_pw123!"
+                                    },
+                                    "summary": "요청 예시"
+                                }
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Login"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Login"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/logout/": {
+            "post": {
+                "operationId": "v1_auth_logout_create",
+                "description": "refresh 토큰을 블랙리스트에 추가하여 로그아웃합니다.",
+                "summary": "로그아웃",
+                "tags": [
+                    "인증"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/me/": {
+            "get": {
+                "operationId": "v1_auth_me_retrieve",
+                "description": "GET: 내 계정 정보 조회. PATCH: 이메일 수정.",
+                "summary": "내 정보 조회/수정",
+                "tags": [
+                    "인증"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "v1_auth_me_partial_update",
+                "description": "GET: 내 계정 정보 조회. PATCH: 이메일 수정.",
+                "summary": "내 정보 조회/수정",
+                "tags": [
+                    "인증"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedUser"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedUser"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedUser"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/portal-check/": {
+            "post": {
+                "operationId": "v1_auth_portal_check_create",
+                "description": "학번과 포털 비밀번호가 유효한지 확인합니다. 회원가입 전 자격증명 검증에 사용합니다.\n포털 비밀번호는 인증에만 사용되며 서버에 저장되지 않습니다.",
+                "summary": "포털 인증 확인",
+                "tags": [
+                    "인증"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PortalCheck"
+                            },
+                            "examples": {
+                                "요청예시": {
+                                    "value": {
+                                        "student_id": "20201234",
+                                        "portal_password": "포털비밀번호"
+                                    },
+                                    "summary": "요청 예시"
+                                }
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PortalCheck"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PortalCheck"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "valid=true이면 인증 성공, valid=false이면 실패"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/register/": {
+            "post": {
+                "operationId": "v1_auth_register_create",
+                "description": "포털 비밀번호로 수원대 포털 인증 후 사이트 계정을 생성합니다.\n포털 비밀번호는 인증에만 사용되며 서버에 저장되지 않습니다.",
+                "summary": "회원가입",
+                "tags": [
+                    "인증"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Register"
+                            },
+                            "examples": {
+                                "요청예시": {
+                                    "value": {
+                                        "student_id": "20201234",
+                                        "portal_password": "포털비밀번호",
+                                        "password": "mysite_pw123!",
+                                        "password_confirm": "mysite_pw123!"
+                                    },
+                                    "summary": "요청 예시"
+                                }
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Register"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Register"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/reset-password/": {
+            "post": {
+                "operationId": "v1_auth_reset_password_create",
+                "description": "포털 비밀번호로 본인 인증 후 사이트 비밀번호를 재설정합니다.\n포털 비밀번호는 인증에만 사용되며 서버에 저장되지 않습니다.",
+                "summary": "비밀번호 재설정",
+                "tags": [
+                    "인증"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResetPassword"
+                            },
+                            "examples": {
+                                "요청예시": {
+                                    "value": {
+                                        "student_id": "20201234",
+                                        "portal_password": "포털비밀번호",
+                                        "new_password": "newsite_pw456!",
+                                        "new_password_confirm": "newsite_pw456!"
+                                    },
+                                    "summary": "요청 예시"
+                                }
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResetPassword"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResetPassword"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/token/refresh/": {
+            "post": {
+                "operationId": "v1_auth_token_refresh_create",
+                "description": "Takes a refresh type JSON web token and returns an access type JSON web\ntoken if the refresh token is valid.",
+                "tags": [
+                    "v1"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenRefresh"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenRefresh"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenRefresh"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TokenRefresh"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/community/home/quick-timetable/": {
+            "get": {
+                "operationId": "v1_community_home_quick_timetable_retrieve",
+                "description": "대표 시간표의 요일별 수업 요약을 반환합니다. 모바일 홈 위젯 렌더링에 최적화된 경량 응답입니다.",
+                "summary": "간편 시간표 (모바일 위젯용)",
+                "tags": [
+                    "홈 위젯"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/QuickTimetableResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/community/home/today/": {
+            "get": {
+                "operationId": "v1_community_home_today_retrieve",
+                "description": "대표 시간표 기준으로 오늘의 모든 수업을 시간순으로 반환합니다. 각 수업에 상태(done/in_progress/upcoming)가 포함됩니다.",
+                "summary": "오늘 전체 일정",
+                "tags": [
+                    "홈 위젯"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TodayScheduleResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/community/posts/": {
+            "get": {
+                "operationId": "v1_community_posts_list",
+                "description": "시간표 공유 커뮤니티 피드를 페이지네이션으로 조회합니다.",
+                "summary": "피드 목록 조회",
+                "parameters": [
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "required": false,
+                        "in": "query",
+                        "description": "A search term.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "커뮤니티"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedPostListList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "v1_community_posts_create",
+                "description": "시간표 공유 게시글을 작성합니다. 위젯(강의 카드, 시간표 미리보기 등)을 첨부할 수 있습니다.",
+                "summary": "게시글 작성",
+                "tags": [
+                    "커뮤니티"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PostCreate"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PostCreate"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PostCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PostCreate"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/community/posts/{id}/": {
+            "get": {
+                "operationId": "v1_community_posts_retrieve",
+                "summary": "게시글 상세 조회",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "커뮤니티"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PostDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "put": {
+                "operationId": "v1_community_posts_update",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "커뮤니티"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PostDetail"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PostDetail"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PostDetail"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PostDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "v1_community_posts_partial_update",
+                "summary": "게시글 수정",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "커뮤니티"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedPostUpdate"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedPostUpdate"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedPostUpdate"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PostDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "v1_community_posts_destroy",
+                "summary": "게시글 삭제",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "커뮤니티"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/community/posts/{id}/like/": {
+            "post": {
+                "operationId": "v1_community_posts_like_create",
+                "description": "게시글에 좋아요를 누르거나 취소합니다.",
+                "summary": "좋아요 토글",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "커뮤니티"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LikeToggleResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/community/posts/{post_pk}/comments/": {
+            "get": {
+                "operationId": "v1_community_posts_comments_list",
+                "summary": "댓글 목록 조회",
+                "parameters": [
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "path",
+                        "name": "post_pk",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    },
+                    {
+                        "name": "search",
+                        "required": false,
+                        "in": "query",
+                        "description": "A search term.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "커뮤니티"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedCommentList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "v1_community_posts_comments_create",
+                "description": "댓글을 작성합니다. 위젯(강의 카드 등)을 첨부할 수 있습니다.",
+                "summary": "댓글 작성",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "post_pk",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "커뮤니티"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CommentCreate"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CommentCreate"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CommentCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CommentCreate"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/community/posts/{post_pk}/comments/{id}/": {
+            "patch": {
+                "operationId": "v1_community_posts_comments_partial_update",
+                "summary": "댓글 수정",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "path",
+                        "name": "post_pk",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "커뮤니티"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "No response body"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "v1_community_posts_comments_destroy",
+                "summary": "댓글 삭제",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "path",
+                        "name": "post_pk",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "커뮤니티"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/courses/": {
+            "get": {
+                "operationId": "v1_courses_list",
+                "description": "학기·유형·이러닝 등으로 필터링하고 이름·학수번호·교수명으로 검색합니다.",
+                "summary": "과목 목록 조회",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "course_type",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "이수구분 필터. 콤마 구분으로 다중값 가능 (예: 전핵,전선)"
+                    },
+                    {
+                        "in": "query",
+                        "name": "department",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "학과 코드로 필터 (Department.code)"
+                    },
+                    {
+                        "in": "query",
+                        "name": "is_elearning",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "period",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "후기 기간 필터. 해당 기간에 후기가 달린 과목만 반환합니다. 값: THIS_SEMESTER(현재 학기), ONE_YEAR(최근 1년), TWO_YEARS(최근 2년)"
+                    },
+                    {
+                        "in": "query",
+                        "name": "professor",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "required": false,
+                        "in": "query",
+                        "description": "A search term.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "semester",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "year_level",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "대상학년 필터. 콤마 구분으로 다중값 가능 (예: 1,2)"
+                    }
+                ],
+                "tags": [
+                    "과목"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedCourseListList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/courses/{id}/": {
+            "get": {
+                "operationId": "v1_courses_retrieve",
+                "summary": "과목 상세 조회",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "과목"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CourseDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/courses/batch/": {
+            "post": {
+                "operationId": "v1_courses_batch_create",
+                "description": "여러 과목 id를 한 번에 전달해 스케줄·후기 통계를 일괄 반환합니다. 시간표 마법사 등에서 활용하세요.",
+                "summary": "과목 상세 일괄 조회",
+                "tags": [
+                    "과목"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CoursesBatchRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CoursesBatchRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CoursesBatchRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CourseDetail"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/courses/classrooms/": {
+            "get": {
+                "operationId": "v1_courses_classrooms_list",
+                "summary": "강의실 목록 조회",
+                "parameters": [
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "required": false,
+                        "in": "query",
+                        "description": "A search term.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "과목"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Classroom"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/courses/classrooms/{id}/schedule/": {
+            "get": {
+                "operationId": "v1_courses_classrooms_schedule_retrieve",
+                "description": "특정 강의실의 주간 시간표를 반환합니다. semester 미제공 시 최신 학기가 자동 선택됩니다.",
+                "summary": "강의실 시간표 조회",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "semester",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "학기 PK (미제공 시 최신 학기)"
+                    }
+                ],
+                "tags": [
+                    "과목"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClassroomScheduleResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/courses/classrooms/available/": {
+            "get": {
+                "operationId": "v1_courses_classrooms_available_list",
+                "description": "현재 시각 기준으로 수업이 없는 강의실 목록을 반환합니다.\nhours 파라미터로 향후 N시간 동안 계속 비어있는 강의실만 필터링할 수 있습니다.",
+                "summary": "현재 비어있는 강의실 조회",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "hours",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "향후 N시간 동안 비어있는 강의실만 조회 (1, 2, 3 등). 미제공 시 현재 시각 기준."
+                    }
+                ],
+                "tags": [
+                    "과목"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Classroom"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/courses/colleges/": {
+            "get": {
+                "operationId": "v1_courses_colleges_list",
+                "description": "단과대 목록과 소속 학과 수를 반환합니다.",
+                "summary": "단과대 목록 조회",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "required": false,
+                        "in": "query",
+                        "description": "A search term.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "과목"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/College"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/courses/departments/": {
+            "get": {
+                "operationId": "v1_courses_departments_list",
+                "description": "과목 검색 필터용 학과 목록을 반환합니다. code 값을 /api/courses/?department=<code> 에 사용하세요. college 파라미터로 단과대별 필터링 가능합니다.",
+                "summary": "학과 목록 조회",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "college",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "단과대 PK로 필터"
+                    },
+                    {
+                        "name": "search",
+                        "required": false,
+                        "in": "query",
+                        "description": "A search term.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "과목"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Department"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/courses/professors/": {
+            "get": {
+                "operationId": "v1_courses_professors_list",
+                "description": "교수 목록을 조회합니다. college 파라미터로 단과대별 필터링 가능합니다.",
+                "summary": "교수 목록 조회",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "college",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "단과대 PK로 필터"
+                    },
+                    {
+                        "in": "query",
+                        "name": "department",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "학과 코드로 필터"
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "required": false,
+                        "in": "query",
+                        "description": "A search term.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "교수"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedProfessorList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/courses/professors/{id}/": {
+            "get": {
+                "operationId": "v1_courses_professors_retrieve",
+                "description": "교수 기본 정보(이메일·전화·연구실)와 오피스아워 전체를 반환합니다.",
+                "summary": "교수 상세 조회",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "교수"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProfessorDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/courses/professors/{id}/office-hours/": {
+            "get": {
+                "operationId": "v1_courses_professors_office_hours_retrieve",
+                "description": "해당 교수의 오피스아워 목록만 반환합니다. 요일·시작/종료 시간·장소·비고 포함.",
+                "summary": "교수 오피스아워 조회",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "교수"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProfessorOfficeHoursResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/courses/professors/{id}/schedule/": {
+            "get": {
+                "operationId": "v1_courses_professors_schedule_retrieve",
+                "description": "해당 교수가 담당하는 과목과 강의 일정을 반환합니다. semester 미제공 시 최신 학기가 자동 선택됩니다.",
+                "summary": "교수 시간표 조회",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "semester",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "학기 PK (미제공 시 최신 학기)"
+                    }
+                ],
+                "tags": [
+                    "교수"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProfessorScheduleResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/courses/semesters/": {
+            "get": {
+                "operationId": "v1_courses_semesters_list",
+                "summary": "학기 목록 조회",
+                "parameters": [
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "required": false,
+                        "in": "query",
+                        "description": "A search term.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "과목"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Semester"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/courses/subjects/": {
+            "get": {
+                "operationId": "courses_subject_list",
+                "description": "같은 course_code+학기를 묶어 과목 단위로 반환합니다. section_count로 몇 분반이 열리는지 확인할 수 있습니다.",
+                "summary": "과목 목록 조회 (분반 묶음)",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "college",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "개설대학. 콤마 구분으로 다중값 가능"
+                    },
+                    {
+                        "in": "query",
+                        "name": "course_type",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "이수구분. 콤마 구분으로 다중값 가능 (예: 전핵,전선)"
+                    },
+                    {
+                        "in": "query",
+                        "name": "department",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "학과 코드 (Department.code). 콤마 구분으로 다중값 가능"
+                    },
+                    {
+                        "in": "query",
+                        "name": "ordering",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "정렬 필드 (name, -name, credits, -credits, course_code, -course_code)"
+                    },
+                    {
+                        "in": "query",
+                        "name": "search",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "과목명·학수번호 검색"
+                    },
+                    {
+                        "in": "query",
+                        "name": "semester",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "학기 PK"
+                    },
+                    {
+                        "in": "query",
+                        "name": "year_level",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "대상학년. 콤마 구분으로 다중값 가능 (예: 1,2)"
+                    }
+                ],
+                "tags": [
+                    "과목"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Subject"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/courses/subjects/{course_code}/": {
+            "get": {
+                "operationId": "courses_subject_detail",
+                "description": "해당 course_code의 모든 분반을 sections 배열로 반환합니다. semester 미제공 시 최신 학기가 자동 선택됩니다.",
+                "summary": "과목 상세 조회 (전 분반)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "course_code",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "semester",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "학기 PK (미제공 시 최신 학기)"
+                    }
+                ],
+                "tags": [
+                    "과목"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SubjectDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/reviews/": {
+            "get": {
+                "operationId": "v1_reviews_list",
+                "description": "GET: 강의 후기 목록 조회 (course_id 쿼리파라미터로 필터링 가능).\nPOST: 후기 작성 (인증 필요). is_anonymous=true로 익명 후기 작성 가능.",
+                "summary": "강의 후기 목록 조회 / 작성",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "course_id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "과목 PK로 필터"
+                    },
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "tags": [
+                    "후기"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedCourseReviewList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "v1_reviews_create",
+                "description": "GET: 강의 후기 목록 조회 (course_id 쿼리파라미터로 필터링 가능).\nPOST: 후기 작성 (인증 필요). is_anonymous=true로 익명 후기 작성 가능.",
+                "summary": "강의 후기 목록 조회 / 작성",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "course_id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "과목 PK로 필터"
+                    }
+                ],
+                "tags": [
+                    "후기"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CourseReview"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CourseReview"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CourseReview"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CourseReview"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/reviews/{id}/": {
+            "patch": {
+                "operationId": "v1_reviews_partial_update",
+                "description": "PATCH: 내 후기 수정 (content, *_score, is_anonymous 등).\nDELETE: 내 후기 삭제.",
+                "summary": "강의 후기 수정 / 삭제",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "후기"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedCourseReview"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedCourseReview"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedCourseReview"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CourseReview"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "v1_reviews_destroy",
+                "description": "PATCH: 내 후기 수정 (content, *_score, is_anonymous 등).\nDELETE: 내 후기 삭제.",
+                "summary": "강의 후기 수정 / 삭제",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "후기"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/reviews/subject/{course_code}/": {
+            "get": {
+                "operationId": "v1_reviews_subject_retrieve",
+                "description": "course_code로 해당 과목의 모든 분반·학기 후기를 통합 조회합니다. 평균 점수 통계와 후기 목록을 함께 반환합니다.",
+                "summary": "과목 단위 후기 조회 (전 분반·전 학기)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "course_code",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "query",
+                        "name": "professor",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "교수명으로 필터"
+                    },
+                    {
+                        "in": "query",
+                        "name": "semester",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "특정 학기 PK로 필터 (미제공 시 전체 학기)"
+                    }
+                ],
+                "tags": [
+                    "후기"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SubjectReviewResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/timetables/": {
+            "get": {
+                "operationId": "v1_timetables_list",
+                "description": "GET: 내 시간표 목록 조회. POST: 새 시간표 생성.",
+                "summary": "시간표 목록 조회 / 생성",
+                "parameters": [
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "required": false,
+                        "in": "query",
+                        "description": "A search term.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "시간표"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedTimetableList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "v1_timetables_create",
+                "description": "GET: 내 시간표 목록 조회. POST: 새 시간표 생성.",
+                "summary": "시간표 목록 조회 / 생성",
+                "tags": [
+                    "시간표"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TimetableCreate"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TimetableCreate"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TimetableCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TimetableCreate"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/timetables/{id}/": {
+            "get": {
+                "operationId": "v1_timetables_retrieve",
+                "description": "GET: 시간표 상세 조회. PATCH: 이름·대표 여부 수정. DELETE: 시간표 삭제.",
+                "summary": "시간표 상세 조회 / 수정 / 삭제",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "시간표"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Timetable"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "put": {
+                "operationId": "v1_timetables_update",
+                "description": "GET: 시간표 상세 조회. PATCH: 이름·대표 여부 수정. DELETE: 시간표 삭제.",
+                "summary": "시간표 상세 조회 / 수정 / 삭제",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "시간표"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Timetable"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Timetable"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Timetable"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Timetable"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "v1_timetables_partial_update",
+                "description": "GET: 시간표 상세 조회. PATCH: 이름·대표 여부 수정. DELETE: 시간표 삭제.",
+                "summary": "시간표 상세 조회 / 수정 / 삭제",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "시간표"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedTimetable"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedTimetable"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedTimetable"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Timetable"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "v1_timetables_destroy",
+                "description": "GET: 시간표 상세 조회. PATCH: 이름·대표 여부 수정. DELETE: 시간표 삭제.",
+                "summary": "시간표 상세 조회 / 수정 / 삭제",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "시간표"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/timetables/{id}/courses/": {
+            "post": {
+                "operationId": "v1_timetables_courses_create",
+                "description": "시간표에 과목을 추가합니다. 기존 과목과 시간이 겹치면 400을 반환합니다.",
+                "summary": "시간표에 과목 추가",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "시간표"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AddCourse"
+                            },
+                            "examples": {
+                                "요청예시": {
+                                    "value": {
+                                        "course_id": 1,
+                                        "color": "#4F46E5"
+                                    },
+                                    "summary": "요청 예시"
+                                }
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AddCourse"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AddCourse"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TimetableCourse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/timetables/{id}/courses/{course_id}/": {
+            "patch": {
+                "operationId": "v1_timetables_courses_partial_update",
+                "description": "PATCH: 과목 색상을 변경합니다. DELETE: 시간표에서 과목을 삭제합니다.",
+                "summary": "시간표 과목 색상 수정",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "course_id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "시간표"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedUpdateCourseColor"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedUpdateCourseColor"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedUpdateCourseColor"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TimetableCourse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "v1_timetables_courses_destroy",
+                "description": "PATCH: 과목 색상을 변경합니다. DELETE: 시간표에서 과목을 삭제합니다.",
+                "summary": "시간표에서 과목 삭제",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "course_id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "시간표"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/timetables/import/": {
+            "post": {
+                "operationId": "v1_timetables_import_create",
+                "description": "포털 비밀번호로 인증 후 수강신청 내역을 조회하여 시간표를 자동 생성합니다.\n포털 비밀번호는 인증에만 사용되며 서버에 저장되지 않습니다.\n\n이미 \"포털 시간표\"가 존재하면 기존 과목을 초기화하고 다시 생성합니다.",
+                "summary": "포털 수강신청 내역으로 시간표 생성",
+                "tags": [
+                    "시간표"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TimetableImportRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TimetableImportRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TimetableImportRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TimetableImportResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/timetables/now/": {
+            "get": {
+                "operationId": "v1_timetables_now_retrieve",
+                "description": "대표 시간표 기준으로 현재 진행 중인 수업과 다음 수업을 반환합니다.",
+                "summary": "현재/다음 수업 조회",
+                "tags": [
+                    "시간표"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CurrentNextCourseResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/timetables/wizard/": {
+            "post": {
+                "operationId": "v1_timetables_wizard_create",
+                "description": "원하는 과목(course_code 목록)과 제약 조건을 전달하면, 시간 충돌 없이 수강 가능한 시간표 조합을 반환합니다.\n\n**옵션:**\n- exclude_first_period: 1교시(~10:00) 수업 제외\n- lunch_break: 점심시간(12:00~13:00) 확보\n- max_days: 주N일 제한 (3 또는 4)\n\n각 course_code에서 분반 하나씩 선택하여 조합을 생성합니다.",
+                "summary": "시간표 마법사 — 자동 조합 생성",
+                "tags": [
+                    "시간표"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WizardRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WizardRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WizardRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WizardResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "AddCourse": {
+                "type": "object",
+                "properties": {
+                    "course_id": {
+                        "type": "integer"
+                    },
+                    "color": {
+                        "type": "string",
+                        "default": "#4F46E5",
+                        "maxLength": 7
+                    }
+                },
+                "required": [
+                    "course_id"
+                ]
+            },
+            "ChangePassword": {
+                "type": "object",
+                "properties": {
+                    "current_password": {
+                        "type": "string",
+                        "writeOnly": true
+                    },
+                    "new_password": {
+                        "type": "string",
+                        "writeOnly": true
+                    },
+                    "new_password_confirm": {
+                        "type": "string",
+                        "writeOnly": true
+                    }
+                },
+                "required": [
+                    "current_password",
+                    "new_password",
+                    "new_password_confirm"
+                ]
+            },
+            "Classroom": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "building": {
+                        "type": "integer",
+                        "title": "건물"
+                    },
+                    "building_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "room_number": {
+                        "type": "string",
+                        "title": "호실",
+                        "maxLength": 20
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "강의실명",
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "building",
+                    "building_name",
+                    "id",
+                    "room_number"
+                ]
+            },
+            "ClassroomScheduleEntry": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "day_of_week": {
+                        "type": "string"
+                    },
+                    "day_display": {
+                        "type": "string"
+                    },
+                    "start_time": {
+                        "type": "string"
+                    },
+                    "end_time": {
+                        "type": "string"
+                    },
+                    "course_code": {
+                        "type": "string"
+                    },
+                    "course_name": {
+                        "type": "string"
+                    },
+                    "section": {
+                        "type": "string"
+                    },
+                    "professor_name": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "course_code",
+                    "course_name",
+                    "day_display",
+                    "day_of_week",
+                    "end_time",
+                    "id",
+                    "professor_name",
+                    "section",
+                    "start_time"
+                ]
+            },
+            "ClassroomScheduleResponse": {
+                "type": "object",
+                "properties": {
+                    "classroom": {
+                        "$ref": "#/components/schemas/Classroom"
+                    },
+                    "semester": {
+                        "$ref": "#/components/schemas/Semester"
+                    },
+                    "schedules": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ClassroomScheduleEntry"
+                        }
+                    }
+                },
+                "required": [
+                    "classroom",
+                    "schedules",
+                    "semester"
+                ]
+            },
+            "College": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "단과대명",
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "id",
+                    "name"
+                ]
+            },
+            "Comment": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "post": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "title": "게시글"
+                    },
+                    "author_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "content": {
+                        "type": "string",
+                        "title": "댓글 내용",
+                        "maxLength": 1000
+                    },
+                    "is_anonymous": {
+                        "type": "boolean",
+                        "title": "익명 여부"
+                    },
+                    "is_mine": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "widgets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Widget"
+                        },
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "title": "작성일"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "title": "수정일"
+                    }
+                },
+                "required": [
+                    "author_name",
+                    "content",
+                    "created_at",
+                    "id",
+                    "is_mine",
+                    "post",
+                    "updated_at",
+                    "widgets"
+                ]
+            },
+            "CommentCreate": {
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "type": "string",
+                        "maxLength": 1000
+                    },
+                    "is_anonymous": {
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "widgets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WidgetInput"
+                        },
+                        "default": []
+                    }
+                },
+                "required": [
+                    "content"
+                ]
+            },
+            "CourseDetail": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "course_code": {
+                        "type": "string",
+                        "title": "학수번호",
+                        "maxLength": 20
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "과목명",
+                        "maxLength": 200
+                    },
+                    "professor": {
+                        "type": "integer",
+                        "nullable": true,
+                        "title": "교수"
+                    },
+                    "professor_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "semester": {
+                        "type": "integer",
+                        "title": "학기"
+                    },
+                    "semester_str": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "credits": {
+                        "type": "integer",
+                        "maximum": 32767,
+                        "minimum": 0,
+                        "title": "학점"
+                    },
+                    "year_level": {
+                        "type": "integer",
+                        "maximum": 4,
+                        "minimum": 1,
+                        "nullable": true,
+                        "title": "학년"
+                    },
+                    "section": {
+                        "type": "string",
+                        "title": "분반",
+                        "maxLength": 10
+                    },
+                    "course_type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CourseTypeEnum"
+                            }
+                        ],
+                        "title": "이수구분"
+                    },
+                    "course_type_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "is_elearning": {
+                        "type": "boolean",
+                        "title": "동영상강좌"
+                    },
+                    "department": {
+                        "type": "integer",
+                        "nullable": true,
+                        "title": "학과"
+                    },
+                    "department_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "schedules": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CourseSchedule"
+                        },
+                        "readOnly": true
+                    },
+                    "review_stats": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ReviewStats"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "sibling_sections": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CourseSection"
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "course_code",
+                    "course_type",
+                    "course_type_display",
+                    "credits",
+                    "department_name",
+                    "id",
+                    "name",
+                    "professor_name",
+                    "review_stats",
+                    "schedules",
+                    "section",
+                    "semester",
+                    "semester_str",
+                    "sibling_sections"
+                ]
+            },
+            "CourseList": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "course_code": {
+                        "type": "string",
+                        "title": "학수번호",
+                        "maxLength": 20
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "과목명",
+                        "maxLength": 200
+                    },
+                    "professor": {
+                        "type": "integer",
+                        "nullable": true,
+                        "title": "교수"
+                    },
+                    "professor_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "semester": {
+                        "type": "integer",
+                        "title": "학기"
+                    },
+                    "semester_str": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "credits": {
+                        "type": "integer",
+                        "maximum": 32767,
+                        "minimum": 0,
+                        "title": "학점"
+                    },
+                    "year_level": {
+                        "type": "integer",
+                        "maximum": 4,
+                        "minimum": 1,
+                        "nullable": true,
+                        "title": "학년"
+                    },
+                    "section": {
+                        "type": "string",
+                        "title": "분반",
+                        "maxLength": 10
+                    },
+                    "course_type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CourseTypeEnum"
+                            }
+                        ],
+                        "title": "이수구분"
+                    },
+                    "course_type_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "is_elearning": {
+                        "type": "boolean",
+                        "title": "동영상강좌"
+                    },
+                    "department": {
+                        "type": "integer",
+                        "nullable": true,
+                        "title": "학과"
+                    },
+                    "department_name": {
+                        "type": "string",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "course_code",
+                    "course_type",
+                    "course_type_display",
+                    "credits",
+                    "department_name",
+                    "id",
+                    "name",
+                    "professor_name",
+                    "section",
+                    "semester",
+                    "semester_str"
+                ]
+            },
+            "CourseReview": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "course": {
+                        "type": "integer",
+                        "title": "과목"
+                    },
+                    "author_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "semester_taken": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "semester_taken_str": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "content": {
+                        "type": "string",
+                        "maxLength": 500
+                    },
+                    "grade_score": {
+                        "type": "integer",
+                        "maximum": 5,
+                        "minimum": 1,
+                        "title": "성적 점수"
+                    },
+                    "assignment_score": {
+                        "type": "integer",
+                        "maximum": 5,
+                        "minimum": 1,
+                        "title": "과제 점수"
+                    },
+                    "exam_score": {
+                        "type": "integer",
+                        "maximum": 5,
+                        "minimum": 1,
+                        "title": "시험 점수"
+                    },
+                    "is_anonymous": {
+                        "type": "boolean",
+                        "title": "익명 여부"
+                    },
+                    "total_score": {
+                        "type": "number",
+                        "format": "double",
+                        "readOnly": true
+                    },
+                    "is_mine": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "title": "작성일"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "title": "수정일"
+                    }
+                },
+                "required": [
+                    "assignment_score",
+                    "author_name",
+                    "content",
+                    "course",
+                    "created_at",
+                    "exam_score",
+                    "grade_score",
+                    "id",
+                    "is_mine",
+                    "semester_taken_str",
+                    "total_score",
+                    "updated_at"
+                ]
+            },
+            "CourseSchedule": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "day_of_week": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DayOfWeekEnum"
+                            }
+                        ],
+                        "title": "요일"
+                    },
+                    "day_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "format": "time",
+                        "title": "시작 시간"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "format": "time",
+                        "title": "종료 시간"
+                    },
+                    "classroom": {
+                        "type": "integer",
+                        "nullable": true,
+                        "title": "강의실"
+                    },
+                    "classroom_str": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "classroom_str",
+                    "day_display",
+                    "day_of_week",
+                    "end_time",
+                    "id",
+                    "start_time"
+                ]
+            },
+            "CourseSection": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "과목명",
+                        "maxLength": 200
+                    },
+                    "section": {
+                        "type": "string",
+                        "title": "분반",
+                        "maxLength": 10
+                    },
+                    "section_type": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "day_night": {
+                        "type": "string",
+                        "title": "주야간",
+                        "maxLength": 10
+                    },
+                    "grade_eval_type": {
+                        "type": "string",
+                        "title": "성적처리",
+                        "maxLength": 20
+                    },
+                    "is_elearning": {
+                        "type": "boolean",
+                        "title": "동영상강좌"
+                    },
+                    "is_reading_cert": {
+                        "type": "boolean",
+                        "title": "독서인증"
+                    },
+                    "combined_class_no": {
+                        "type": "string",
+                        "title": "합반번호",
+                        "maxLength": 30
+                    },
+                    "year_level": {
+                        "type": "integer",
+                        "maximum": 4,
+                        "minimum": 1,
+                        "nullable": true,
+                        "title": "학년"
+                    },
+                    "course_type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CourseTypeEnum"
+                            }
+                        ],
+                        "title": "이수구분"
+                    },
+                    "course_type_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "offering_department": {
+                        "type": "string",
+                        "title": "개설학과",
+                        "maxLength": 200
+                    },
+                    "college": {
+                        "type": "string",
+                        "title": "개설대학",
+                        "maxLength": 100
+                    },
+                    "professor": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Professor"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "schedules": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CourseSchedule"
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "course_type",
+                    "course_type_display",
+                    "id",
+                    "name",
+                    "professor",
+                    "schedules",
+                    "section_type"
+                ]
+            },
+            "CourseTypeEnum": {
+                "enum": [
+                    "전핵",
+                    "전선",
+                    "전공",
+                    "전교",
+                    "전취",
+                    "중핵",
+                    "기교",
+                    "선교",
+                    "소교",
+                    "교직",
+                    "공통",
+                    "선수",
+                    "RT",
+                    "기타"
+                ],
+                "type": "string",
+                "description": "* `전핵` - 전공핵심\n* `전선` - 전공선택\n* `전공` - 전공\n* `전교` - 전공교육\n* `전취` - 전공취득\n* `중핵` - 중핵교양\n* `기교` - 기초교양\n* `선교` - 선택교양\n* `소교` - 소양교양\n* `교직` - 교직\n* `공통` - 공통\n* `선수` - 선수과목\n* `RT` - RT\n* `기타` - 기타"
+            },
+            "CoursesBatchRequest": {
+                "type": "object",
+                "properties": {
+                    "ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "description": "과목 PK 배열"
+                    }
+                },
+                "required": [
+                    "ids"
+                ]
+            },
+            "CurrentNextCourseResponse": {
+                "type": "object",
+                "properties": {
+                    "next": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ScheduleItem"
+                            }
+                        ],
+                        "title": "Current"
+                    },
+                    "online_courses": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "next",
+                    "online_courses"
+                ]
+            },
+            "DayOfWeekEnum": {
+                "enum": [
+                    "MON",
+                    "TUE",
+                    "WED",
+                    "THU",
+                    "FRI",
+                    "SAT",
+                    "SUN"
+                ],
+                "type": "string",
+                "description": "* `MON` - 월\n* `TUE` - 화\n* `WED` - 수\n* `THU` - 목\n* `FRI` - 금\n* `SAT` - 토\n* `SUN` - 일"
+            },
+            "Department": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "code": {
+                        "type": "string",
+                        "title": "학과 코드",
+                        "maxLength": 100
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "학과명",
+                        "maxLength": 100
+                    },
+                    "college": {
+                        "type": "integer",
+                        "nullable": true,
+                        "title": "단과대"
+                    },
+                    "college_name": {
+                        "type": "string",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "code",
+                    "college_name",
+                    "id",
+                    "name"
+                ]
+            },
+            "LikeToggleResponse": {
+                "type": "object",
+                "properties": {
+                    "liked": {
+                        "type": "boolean"
+                    },
+                    "like_count": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "like_count",
+                    "liked"
+                ]
+            },
+            "Login": {
+                "type": "object",
+                "properties": {
+                    "student_id": {
+                        "type": "string",
+                        "maxLength": 20
+                    },
+                    "password": {
+                        "type": "string",
+                        "writeOnly": true
+                    }
+                },
+                "required": [
+                    "password",
+                    "student_id"
+                ]
+            },
+            "OfficeHour": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "day_of_week": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DayOfWeekEnum"
+                            }
+                        ],
+                        "title": "요일"
+                    },
+                    "day_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "format": "time",
+                        "title": "시작 시간"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "format": "time",
+                        "title": "종료 시간"
+                    },
+                    "location": {
+                        "type": "string",
+                        "title": "장소",
+                        "maxLength": 200
+                    },
+                    "note": {
+                        "type": "string",
+                        "title": "비고",
+                        "maxLength": 200
+                    }
+                },
+                "required": [
+                    "day_display",
+                    "day_of_week",
+                    "end_time",
+                    "id",
+                    "start_time"
+                ]
+            },
+            "PaginatedCommentList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Comment"
+                        }
+                    }
+                }
+            },
+            "PaginatedCourseListList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CourseList"
+                        }
+                    }
+                }
+            },
+            "PaginatedCourseReviewList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CourseReview"
+                        }
+                    }
+                }
+            },
+            "PaginatedPostListList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PostList"
+                        }
+                    }
+                }
+            },
+            "PaginatedProfessorList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Professor"
+                        }
+                    }
+                }
+            },
+            "PaginatedTimetableList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Timetable"
+                        }
+                    }
+                }
+            },
+            "PatchedCourseReview": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "course": {
+                        "type": "integer",
+                        "title": "과목"
+                    },
+                    "author_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "semester_taken": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "semester_taken_str": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "content": {
+                        "type": "string",
+                        "maxLength": 500
+                    },
+                    "grade_score": {
+                        "type": "integer",
+                        "maximum": 5,
+                        "minimum": 1,
+                        "title": "성적 점수"
+                    },
+                    "assignment_score": {
+                        "type": "integer",
+                        "maximum": 5,
+                        "minimum": 1,
+                        "title": "과제 점수"
+                    },
+                    "exam_score": {
+                        "type": "integer",
+                        "maximum": 5,
+                        "minimum": 1,
+                        "title": "시험 점수"
+                    },
+                    "is_anonymous": {
+                        "type": "boolean",
+                        "title": "익명 여부"
+                    },
+                    "total_score": {
+                        "type": "number",
+                        "format": "double",
+                        "readOnly": true
+                    },
+                    "is_mine": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "title": "작성일"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "title": "수정일"
+                    }
+                }
+            },
+            "PatchedPostUpdate": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "content": {
+                        "type": "string",
+                        "maxLength": 2000
+                    },
+                    "is_anonymous": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "PatchedTimetable": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "semester": {
+                        "type": "integer",
+                        "title": "학기"
+                    },
+                    "semester_str": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "시간표 이름",
+                        "maxLength": 100
+                    },
+                    "is_main": {
+                        "type": "boolean",
+                        "title": "대표 시간표"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "title": "생성일"
+                    },
+                    "courses": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TimetableCourse"
+                        },
+                        "readOnly": true
+                    },
+                    "online_courses": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TimetableCourse"
+                        },
+                        "readOnly": true
+                    }
+                }
+            },
+            "PatchedUpdateCourseColor": {
+                "type": "object",
+                "properties": {
+                    "color": {
+                        "type": "string",
+                        "description": "HEX 색상 코드 (예: #FF5733)",
+                        "pattern": "^#[0-9A-Fa-f]{6}$"
+                    }
+                }
+            },
+            "PatchedUser": {
+                "type": "object",
+                "properties": {
+                    "student_id": {
+                        "type": "string",
+                        "readOnly": true,
+                        "title": "학번"
+                    },
+                    "name": {
+                        "type": "string",
+                        "readOnly": true,
+                        "title": "이름"
+                    },
+                    "major": {
+                        "type": "string",
+                        "readOnly": true,
+                        "title": "전공"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "readOnly": true,
+                        "title": "이메일"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                }
+            },
+            "PortalCheck": {
+                "type": "object",
+                "properties": {
+                    "student_id": {
+                        "type": "string",
+                        "description": "학번",
+                        "maxLength": 20
+                    },
+                    "portal_password": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "description": "포털 비밀번호"
+                    }
+                },
+                "required": [
+                    "portal_password",
+                    "student_id"
+                ]
+            },
+            "PostCreate": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "content": {
+                        "type": "string",
+                        "maxLength": 2000
+                    },
+                    "timetable": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "is_anonymous": {
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "widgets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WidgetInput"
+                        },
+                        "default": []
+                    }
+                },
+                "required": [
+                    "content",
+                    "title"
+                ]
+            },
+            "PostDetail": {
+                "type": "object",
+                "description": "게시글 상세 — 시간표 정보 포함.",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "author_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "title": {
+                        "type": "string",
+                        "title": "제목",
+                        "maxLength": 200
+                    },
+                    "content": {
+                        "type": "string",
+                        "title": "내용",
+                        "maxLength": 2000
+                    },
+                    "timetable": {
+                        "type": "integer",
+                        "nullable": true,
+                        "title": "공유 시간표"
+                    },
+                    "is_anonymous": {
+                        "type": "boolean",
+                        "title": "익명 여부"
+                    },
+                    "like_count": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "title": "좋아요 수"
+                    },
+                    "comment_count": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "title": "댓글 수"
+                    },
+                    "is_liked": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "is_mine": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "widgets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Widget"
+                        },
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "title": "작성일"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "title": "수정일"
+                    },
+                    "timetable_detail": {
+                        "nullable": true,
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "author_name",
+                    "comment_count",
+                    "content",
+                    "created_at",
+                    "id",
+                    "is_liked",
+                    "is_mine",
+                    "like_count",
+                    "timetable_detail",
+                    "title",
+                    "updated_at",
+                    "widgets"
+                ]
+            },
+            "PostList": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "author_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "title": {
+                        "type": "string",
+                        "title": "제목",
+                        "maxLength": 200
+                    },
+                    "content": {
+                        "type": "string",
+                        "title": "내용",
+                        "maxLength": 2000
+                    },
+                    "timetable": {
+                        "type": "integer",
+                        "nullable": true,
+                        "title": "공유 시간표"
+                    },
+                    "is_anonymous": {
+                        "type": "boolean",
+                        "title": "익명 여부"
+                    },
+                    "like_count": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "title": "좋아요 수"
+                    },
+                    "comment_count": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "title": "댓글 수"
+                    },
+                    "is_liked": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "is_mine": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "widgets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Widget"
+                        },
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "title": "작성일"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "title": "수정일"
+                    }
+                },
+                "required": [
+                    "author_name",
+                    "comment_count",
+                    "content",
+                    "created_at",
+                    "id",
+                    "is_liked",
+                    "is_mine",
+                    "like_count",
+                    "title",
+                    "updated_at",
+                    "widgets"
+                ]
+            },
+            "Professor": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "교수명",
+                        "maxLength": 50
+                    },
+                    "department": {
+                        "type": "string",
+                        "title": "학과",
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "id",
+                    "name"
+                ]
+            },
+            "ProfessorDetail": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "교수명",
+                        "maxLength": 50
+                    },
+                    "department": {
+                        "type": "string",
+                        "title": "학과",
+                        "maxLength": 100
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "title": "이메일",
+                        "maxLength": 254
+                    },
+                    "phone": {
+                        "type": "string",
+                        "title": "전화번호",
+                        "maxLength": 20
+                    },
+                    "office_location": {
+                        "type": "string",
+                        "title": "연구실 위치",
+                        "maxLength": 200
+                    },
+                    "office_hours": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OfficeHour"
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "office_hours"
+                ]
+            },
+            "ProfessorOfficeHoursResponse": {
+                "type": "object",
+                "properties": {
+                    "professor_id": {
+                        "type": "integer"
+                    },
+                    "professor_name": {
+                        "type": "string"
+                    },
+                    "office_location": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "office_hours": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OfficeHour"
+                        }
+                    }
+                },
+                "required": [
+                    "office_hours",
+                    "office_location",
+                    "professor_id",
+                    "professor_name"
+                ]
+            },
+            "ProfessorScheduleEntry": {
+                "type": "object",
+                "description": "교수 시간표용 — 과목 기본 정보 + 강의 스케줄.",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "course_code": {
+                        "type": "string",
+                        "title": "학수번호",
+                        "maxLength": 20
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "과목명",
+                        "maxLength": 200
+                    },
+                    "section": {
+                        "type": "string",
+                        "title": "분반",
+                        "maxLength": 10
+                    },
+                    "credits": {
+                        "type": "integer",
+                        "maximum": 32767,
+                        "minimum": 0,
+                        "title": "학점"
+                    },
+                    "schedules": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CourseSchedule"
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "course_code",
+                    "credits",
+                    "id",
+                    "name",
+                    "schedules"
+                ]
+            },
+            "ProfessorScheduleResponse": {
+                "type": "object",
+                "properties": {
+                    "professor": {
+                        "$ref": "#/components/schemas/Professor"
+                    },
+                    "semester": {
+                        "$ref": "#/components/schemas/Semester"
+                    },
+                    "courses": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProfessorScheduleEntry"
+                        }
+                    }
+                },
+                "required": [
+                    "courses",
+                    "professor",
+                    "semester"
+                ]
+            },
+            "QuickTimetableResponse": {
+                "type": "object",
+                "properties": {
+                    "timetable_name": {
+                        "type": "string"
+                    },
+                    "semester": {
+                        "type": "string"
+                    },
+                    "days": {}
+                },
+                "required": [
+                    "days",
+                    "semester",
+                    "timetable_name"
+                ]
+            },
+            "Register": {
+                "type": "object",
+                "properties": {
+                    "student_id": {
+                        "type": "string",
+                        "description": "학번",
+                        "maxLength": 20
+                    },
+                    "portal_password": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "description": "포털 비밀번호 (인증 후 저장되지 않음)"
+                    },
+                    "password": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "description": "사이트 비밀번호"
+                    },
+                    "password_confirm": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "description": "사이트 비밀번호 확인"
+                    }
+                },
+                "required": [
+                    "password",
+                    "password_confirm",
+                    "portal_password",
+                    "student_id"
+                ]
+            },
+            "ResetPassword": {
+                "type": "object",
+                "properties": {
+                    "student_id": {
+                        "type": "string",
+                        "description": "학번",
+                        "maxLength": 20
+                    },
+                    "portal_password": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "description": "포털 비밀번호"
+                    },
+                    "new_password": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "description": "새 사이트 비밀번호"
+                    },
+                    "new_password_confirm": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "description": "새 사이트 비밀번호 확인"
+                    }
+                },
+                "required": [
+                    "new_password",
+                    "new_password_confirm",
+                    "portal_password",
+                    "student_id"
+                ]
+            },
+            "ReviewStats": {
+                "type": "object",
+                "properties": {
+                    "count": {
+                        "type": "integer"
+                    },
+                    "avg_grade": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "avg_assignment": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "avg_exam": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "avg_total": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "avg_assignment",
+                    "avg_exam",
+                    "avg_grade",
+                    "avg_total",
+                    "count"
+                ]
+            },
+            "ScheduleItem": {
+                "type": "object",
+                "properties": {
+                    "course_id": {
+                        "type": "integer"
+                    },
+                    "course_name": {
+                        "type": "string"
+                    },
+                    "professor": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "day_of_week": {
+                        "type": "string"
+                    },
+                    "start_time": {
+                        "type": "string"
+                    },
+                    "end_time": {
+                        "type": "string"
+                    },
+                    "classroom": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "classroom",
+                    "course_id",
+                    "course_name",
+                    "day_of_week",
+                    "end_time",
+                    "professor",
+                    "start_time"
+                ]
+            },
+            "Semester": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "year": {
+                        "type": "integer",
+                        "maximum": 32767,
+                        "minimum": 0,
+                        "title": "연도"
+                    },
+                    "term": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TermEnum"
+                            }
+                        ],
+                        "title": "학기"
+                    },
+                    "term_display": {
+                        "type": "string",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "id",
+                    "term",
+                    "term_display",
+                    "year"
+                ]
+            },
+            "StatusEnum": {
+                "enum": [
+                    "done",
+                    "in_progress",
+                    "upcoming"
+                ],
+                "type": "string",
+                "description": "* `done` - done\n* `in_progress` - in_progress\n* `upcoming` - upcoming"
+            },
+            "Subject": {
+                "type": "object",
+                "description": "values().annotate() 결과 dict를 직렬화하는 과목 목록용 시리얼라이저.",
+                "properties": {
+                    "course_code": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "credits": {
+                        "type": "integer"
+                    },
+                    "course_type": {
+                        "type": "string"
+                    },
+                    "course_type_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "year_level": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "offering_department": {
+                        "type": "string"
+                    },
+                    "college": {
+                        "type": "string"
+                    },
+                    "theory_hours": {
+                        "type": "integer"
+                    },
+                    "practice_hours": {
+                        "type": "integer"
+                    },
+                    "section_count": {
+                        "type": "integer"
+                    },
+                    "elearning_count": {
+                        "type": "integer"
+                    },
+                    "distinct_name_count": {
+                        "type": "integer",
+                        "description": "분반별 과목명이 몇 종류인지. 1보다 크면 분반마다 주제가 다른 과목 (예: 글로벌교양)"
+                    },
+                    "distinct_college_count": {
+                        "type": "integer",
+                        "description": "분반이 몇 개 대학에 배정되는지. 1보다 크면 대학별 분반 배정 과목 (예: ESL/CSL)"
+                    }
+                },
+                "required": [
+                    "college",
+                    "course_code",
+                    "course_type",
+                    "course_type_display",
+                    "credits",
+                    "distinct_college_count",
+                    "distinct_name_count",
+                    "elearning_count",
+                    "name",
+                    "offering_department",
+                    "practice_hours",
+                    "section_count",
+                    "theory_hours",
+                    "year_level"
+                ]
+            },
+            "SubjectDetail": {
+                "type": "object",
+                "description": "과목 상세 (전 분반 포함) 시리얼라이저.",
+                "properties": {
+                    "course_code": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "credits": {
+                        "type": "integer"
+                    },
+                    "course_type": {
+                        "type": "string"
+                    },
+                    "course_type_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "year_level": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "offering_department": {
+                        "type": "string"
+                    },
+                    "college": {
+                        "type": "string"
+                    },
+                    "theory_hours": {
+                        "type": "integer"
+                    },
+                    "practice_hours": {
+                        "type": "integer"
+                    },
+                    "section_count": {
+                        "type": "integer"
+                    },
+                    "distinct_name_count": {
+                        "type": "integer",
+                        "description": "분반별 과목명이 몇 종류인지. 1보다 크면 분반마다 주제가 다른 과목 (예: 글로벌교양)"
+                    },
+                    "distinct_college_count": {
+                        "type": "integer",
+                        "description": "분반이 몇 개 대학에 배정되는지. 1보다 크면 대학별 분반 배정 과목 (예: ESL/CSL)"
+                    },
+                    "sections": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CourseSection"
+                        }
+                    }
+                },
+                "required": [
+                    "college",
+                    "course_code",
+                    "course_type",
+                    "course_type_display",
+                    "credits",
+                    "distinct_college_count",
+                    "distinct_name_count",
+                    "name",
+                    "offering_department",
+                    "practice_hours",
+                    "section_count",
+                    "sections",
+                    "theory_hours",
+                    "year_level"
+                ]
+            },
+            "SubjectReview": {
+                "type": "object",
+                "description": "과목(course_code) 단위 후기 — 분반·교수 정보 포함.",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "course": {
+                        "type": "integer",
+                        "title": "과목"
+                    },
+                    "section": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "professor_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "author_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "semester_taken": {
+                        "type": "integer",
+                        "nullable": true,
+                        "title": "수강 학기"
+                    },
+                    "semester_taken_str": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "content": {
+                        "type": "string",
+                        "title": "후기 내용",
+                        "maxLength": 500
+                    },
+                    "grade_score": {
+                        "type": "integer",
+                        "maximum": 5,
+                        "minimum": 1,
+                        "title": "성적 점수"
+                    },
+                    "assignment_score": {
+                        "type": "integer",
+                        "maximum": 5,
+                        "minimum": 1,
+                        "title": "과제 점수"
+                    },
+                    "exam_score": {
+                        "type": "integer",
+                        "maximum": 5,
+                        "minimum": 1,
+                        "title": "시험 점수"
+                    },
+                    "is_anonymous": {
+                        "type": "boolean",
+                        "title": "익명 여부"
+                    },
+                    "total_score": {
+                        "type": "number",
+                        "format": "double",
+                        "readOnly": true
+                    },
+                    "is_mine": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "title": "작성일"
+                    }
+                },
+                "required": [
+                    "assignment_score",
+                    "author_name",
+                    "content",
+                    "course",
+                    "created_at",
+                    "exam_score",
+                    "grade_score",
+                    "id",
+                    "is_mine",
+                    "professor_name",
+                    "section",
+                    "semester_taken_str",
+                    "total_score"
+                ]
+            },
+            "SubjectReviewResponse": {
+                "type": "object",
+                "properties": {
+                    "course_code": {
+                        "type": "string"
+                    },
+                    "course_name": {
+                        "type": "string"
+                    },
+                    "review_count": {
+                        "type": "integer"
+                    },
+                    "stats": {
+                        "$ref": "#/components/schemas/SubjectReviewStats"
+                    },
+                    "reviews": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SubjectReview"
+                        }
+                    }
+                },
+                "required": [
+                    "course_code",
+                    "course_name",
+                    "review_count",
+                    "reviews",
+                    "stats"
+                ]
+            },
+            "SubjectReviewStats": {
+                "type": "object",
+                "properties": {
+                    "avg_grade": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "avg_assignment": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "avg_exam": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "avg_total": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "avg_assignment",
+                    "avg_exam",
+                    "avg_grade",
+                    "avg_total"
+                ]
+            },
+            "TermEnum": {
+                "enum": [
+                    "1",
+                    "2",
+                    "S",
+                    "W"
+                ],
+                "type": "string",
+                "description": "* `1` - 1학기\n* `2` - 2학기\n* `S` - 여름학기\n* `W` - 겨울학기"
+            },
+            "Timetable": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "semester": {
+                        "type": "integer",
+                        "title": "학기"
+                    },
+                    "semester_str": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "시간표 이름",
+                        "maxLength": 100
+                    },
+                    "is_main": {
+                        "type": "boolean",
+                        "title": "대표 시간표"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "title": "생성일"
+                    },
+                    "courses": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TimetableCourse"
+                        },
+                        "readOnly": true
+                    },
+                    "online_courses": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TimetableCourse"
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "courses",
+                    "created_at",
+                    "id",
+                    "online_courses",
+                    "semester",
+                    "semester_str"
+                ]
+            },
+            "TimetableCourse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "course": {
+                        "type": "integer",
+                        "title": "과목"
+                    },
+                    "course_detail": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CourseList"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "schedules": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CourseSchedule"
+                        },
+                        "readOnly": true
+                    },
+                    "color": {
+                        "type": "string",
+                        "title": "색상 (HEX)",
+                        "maxLength": 7
+                    },
+                    "is_elearning": {
+                        "type": "boolean",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "course",
+                    "course_detail",
+                    "id",
+                    "is_elearning",
+                    "schedules"
+                ]
+            },
+            "TimetableCreate": {
+                "type": "object",
+                "properties": {
+                    "semester": {
+                        "type": "integer",
+                        "title": "학기"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "시간표 이름",
+                        "maxLength": 100
+                    },
+                    "is_main": {
+                        "type": "boolean",
+                        "title": "대표 시간표"
+                    }
+                },
+                "required": [
+                    "semester"
+                ]
+            },
+            "TimetableImportRequest": {
+                "type": "object",
+                "properties": {
+                    "portal_password": {
+                        "type": "string",
+                        "description": "수원대 포털 비밀번호"
+                    },
+                    "semester": {
+                        "type": "integer",
+                        "description": "학기 PK (미제공 시 최신 학기)"
+                    }
+                },
+                "required": [
+                    "portal_password"
+                ]
+            },
+            "TimetableImportResponse": {
+                "type": "object",
+                "properties": {
+                    "timetable": {
+                        "$ref": "#/components/schemas/Timetable"
+                    },
+                    "matched_count": {
+                        "type": "integer"
+                    },
+                    "unmatched": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/UnmatchedCourse"
+                        }
+                    }
+                },
+                "required": [
+                    "matched_count",
+                    "timetable",
+                    "unmatched"
+                ]
+            },
+            "TodayClassItem": {
+                "type": "object",
+                "properties": {
+                    "course_id": {
+                        "type": "integer"
+                    },
+                    "course_name": {
+                        "type": "string"
+                    },
+                    "professor": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "start_time": {
+                        "type": "string"
+                    },
+                    "end_time": {
+                        "type": "string"
+                    },
+                    "classroom": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "color": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/StatusEnum"
+                    }
+                },
+                "required": [
+                    "classroom",
+                    "color",
+                    "course_id",
+                    "course_name",
+                    "end_time",
+                    "professor",
+                    "start_time",
+                    "status"
+                ]
+            },
+            "TodayScheduleResponse": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string"
+                    },
+                    "day_of_week": {
+                        "type": "string"
+                    },
+                    "classes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TodayClassItem"
+                        }
+                    }
+                },
+                "required": [
+                    "classes",
+                    "date",
+                    "day_of_week"
+                ]
+            },
+            "TokenRefresh": {
+                "type": "object",
+                "properties": {
+                    "access": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "refresh": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "access",
+                    "refresh"
+                ]
+            },
+            "UnmatchedCourse": {
+                "type": "object",
+                "properties": {
+                    "course_code": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "section": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "course_code",
+                    "name",
+                    "section"
+                ]
+            },
+            "User": {
+                "type": "object",
+                "properties": {
+                    "student_id": {
+                        "type": "string",
+                        "readOnly": true,
+                        "title": "학번"
+                    },
+                    "name": {
+                        "type": "string",
+                        "readOnly": true,
+                        "title": "이름"
+                    },
+                    "major": {
+                        "type": "string",
+                        "readOnly": true,
+                        "title": "전공"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "readOnly": true,
+                        "title": "이메일"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "email",
+                    "major",
+                    "name",
+                    "student_id"
+                ]
+            },
+            "Widget": {
+                "type": "object",
+                "description": "위젯 읽기용 — resolved_data로 실제 객체 정보를 포함.",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "widget_type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/WidgetTypeEnum"
+                            }
+                        ],
+                        "title": "위젯 유형"
+                    },
+                    "data": {
+                        "title": "위젯 데이터"
+                    },
+                    "resolved_data": {
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "title": "생성일"
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "data",
+                    "id",
+                    "resolved_data",
+                    "widget_type"
+                ]
+            },
+            "WidgetInput": {
+                "type": "object",
+                "description": "위젯 생성 시 입력용.",
+                "properties": {
+                    "widget_type": {
+                        "$ref": "#/components/schemas/WidgetTypeEnum"
+                    },
+                    "data": {}
+                },
+                "required": [
+                    "data",
+                    "widget_type"
+                ]
+            },
+            "WidgetTypeEnum": {
+                "enum": [
+                    "course",
+                    "timetable",
+                    "course_recommendation"
+                ],
+                "type": "string",
+                "description": "* `course` - 강의 카드\n* `timetable` - 시간표 미리보기\n* `course_recommendation` - 강의 추천"
+            },
+            "WizardCombination": {
+                "type": "object",
+                "properties": {
+                    "courses": {
+                        "type": "array",
+                        "items": {}
+                    },
+                    "days_used": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "total_credits": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "courses",
+                    "days_used",
+                    "total_credits"
+                ]
+            },
+            "WizardRequest": {
+                "type": "object",
+                "properties": {
+                    "course_codes": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "수강할 과목의 학수번호(course_code) 배열"
+                    },
+                    "semester": {
+                        "type": "integer",
+                        "description": "학기 PK (미제공 시 최신 학기)"
+                    },
+                    "exclude_first_period": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "1교시(~10:00) 수업 제외"
+                    },
+                    "lunch_break": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "점심시간(12~13시) 확보"
+                    },
+                    "max_days": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "주N일 제한 (3 또는 4)"
+                    }
+                },
+                "required": [
+                    "course_codes"
+                ]
+            },
+            "WizardResponse": {
+                "type": "object",
+                "properties": {
+                    "total_combinations": {
+                        "type": "integer"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WizardCombination"
+                        }
+                    }
+                },
+                "required": [
+                    "results",
+                    "total_combinations"
+                ]
+            }
+        },
+        "securitySchemes": {
+            "jwtAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "인증",
+            "description": "회원가입·로그인·토큰 관리"
+        },
+        {
+            "name": "과목",
+            "description": "학기·과목·강의실 조회"
+        },
+        {
+            "name": "교수",
+            "description": "교수 목록·상세·시간표·오피스아워 조회"
+        },
+        {
+            "name": "시간표",
+            "description": "내 시간표 관리"
+        },
+        {
+            "name": "후기",
+            "description": "강의 후기 조회·작성"
+        },
+        {
+            "name": "커뮤니티",
+            "description": "시간표 공유·피드·댓글·좋아요"
+        },
+        {
+            "name": "홈 위젯",
+            "description": "모바일 홈 위젯용 API"
+        }
+    ]
+}

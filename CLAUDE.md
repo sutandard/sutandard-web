@@ -26,6 +26,9 @@ flutter build appbundle --release
 
 # Lint
 flutter analyze
+
+# Sync OpenAPI schema (writes docs/openapi.{yaml,json}, reports drift vs api_constants.dart)
+dart run tool/sync_api.dart
 ```
 
 No test suite exists yet.
